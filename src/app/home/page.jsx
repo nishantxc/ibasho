@@ -51,8 +51,8 @@ const CheckInForm = React.memo(({
               key={mood}
               type="button"
               className={`px-3 py-2 rounded-full text-sm font-mono ${moodTag === mood
-                  ? 'bg-pink-200 text-gray-800'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-pink-200 text-gray-800'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               onClick={() => setMoodTag(mood)}
               whileHover={{ scale: 1.05 }}
@@ -78,8 +78,8 @@ const CheckInForm = React.memo(({
         onClick={submitEntry}
         disabled={!photoData || !caption || !moodTag}
         className={`w-full py-3 rounded-full text-gray-800 font-medium transition-colors ${photoData && caption && moodTag
-            ? 'bg-pink-300 hover:bg-pink-400'
-            : 'bg-gray-200 opacity-50 cursor-not-allowed'
+          ? 'bg-pink-300 hover:bg-pink-400'
+          : 'bg-gray-200 opacity-50 cursor-not-allowed'
           }`}
         whileHover={photoData && caption && moodTag ? { scale: 1.02 } : {}}
         whileTap={photoData && caption && moodTag ? { scale: 0.98 } : {}}
@@ -180,14 +180,13 @@ const SeenlyApp = () => {
     setError('');
 
     try {
-      // iOS Safari requires specific constraints
+      // More permissive constraints for iOS
       const constraints = {
         video: {
-          facingMode: 'environment',
-          width: { ideal: 1280, max: 1920 },
-          height: { ideal: 720, max: 1080 }
-        },
-        audio: false // Explicitly disable audio for iOS
+          facingMode: 'user', // Start with front camera for better iOS compatibility
+          width: { ideal: 640, max: 1280 },
+          height: { ideal: 480, max: 720 }
+        }
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -195,66 +194,66 @@ const SeenlyApp = () => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
 
-        // iOS Safari specific video setup
-        videoRef.current.setAttribute('playsinline', true);
-        videoRef.current.setAttribute('webkit-playsinline', true);
+        // Critical iOS Safari setup
+        videoRef.current.setAttribute('playsinline', '');
+        videoRef.current.setAttribute('webkit-playsinline', '');
+        videoRef.current.setAttribute('autoplay', '');
         videoRef.current.muted = true;
 
-        // Handle the loadedmetadata event properly for iOS
-        const handleVideoReady = () => {
-          console.log('Video metadata loaded');
+        // Simplified promise-based approach
+        try {
+          await videoRef.current.play();
+          console.log('Video playing successfully');
+          setCameraOpen(true);
+          setCameraLoading(false);
+        } catch (playError) {
+          console.error('Video play failed:', playError);
 
-          // Force play on iOS - must be in user gesture context
-          videoRef.current.play()
-            .then(() => {
-              console.log('Video playing successfully');
+          // Fallback: try to play again after a short delay
+          setTimeout(async () => {
+            try {
+              await videoRef.current.play();
               setCameraOpen(true);
               setCameraLoading(false);
-            })
-            .catch((playError) => {
-              console.error('Video play failed:', playError);
-              setError(`Video playback failed: ${playError.message}`);
+            } catch (retryError) {
+              setError('Camera failed to start. Please try again.');
               setCameraLoading(false);
-
-              // Clean up stream on play failure
               stream.getTracks().forEach(track => track.stop());
-            });
-        };
-
-        const handleVideoError = (error) => {
-          console.error('Video error:', error);
-          setError('Video loading failed. Please try again.');
-          setCameraLoading(false);
-
-          // Clean up stream on error
-          stream.getTracks().forEach(track => track.stop());
-        };
-
-        // Remove any existing listeners
-        videoRef.current.removeEventListener('loadedmetadata', handleVideoReady);
-        videoRef.current.removeEventListener('error', handleVideoError);
-
-        // Add event listeners
-        videoRef.current.addEventListener('loadedmetadata', handleVideoReady);
-        videoRef.current.addEventListener('error', handleVideoError);
-
-        // iOS Safari sometimes needs a slight delay
-        setTimeout(() => {
-          if (videoRef.current && videoRef.current.readyState >= 2) {
-            handleVideoReady();
-          }
-        }, 100);
+            }
+          }, 500);
+        }
       }
     } catch (err) {
       console.error('Camera access error:', err);
       let errorMessage = 'Camera access failed.';
 
       if (err.name === 'NotAllowedError') {
-        errorMessage = 'Camera permission denied. Please allow camera access in Settings.';
+        errorMessage = 'Camera permission denied. Please allow camera access and refresh.';
       } else if (err.name === 'NotFoundError') {
         errorMessage = 'No camera found on this device.';
       } else if (err.name === 'NotSupportedError') {
         errorMessage = 'Camera not supported in this browser.';
+      } else if (err.name === 'OverconstrainedError') {
+        errorMessage = 'Camera constraints not supported. Trying simpler setup...';
+
+        // Fallback with minimal constraints
+        setTimeout(() => {
+          navigator.mediaDevices.getUserMedia({ video: true })
+            .then(fallbackStream => {
+              if (videoRef.current) {
+                videoRef.current.srcObject = fallbackStream;
+                videoRef.current.play().then(() => {
+                  setCameraOpen(true);
+                  setCameraLoading(false);
+                });
+              }
+            })
+            .catch(() => {
+              setError('Camera initialization failed completely.');
+              setCameraLoading(false);
+            });
+        }, 1000);
+        return;
       }
 
       setError(errorMessage);
@@ -321,6 +320,35 @@ const SeenlyApp = () => {
     setCameraLoading(false);
     setError('');
   };
+
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleCanPlay = () => {
+      console.log('Video can play');
+      if (cameraLoading) {
+        setCameraOpen(true);
+        setCameraLoading(false);
+      }
+    };
+
+    const handleError = (e) => {
+      console.error('Video error event:', e);
+      setError('Video stream error occurred.');
+      setCameraLoading(false);
+    };
+
+    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('error', handleError);
+
+    return () => {
+      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('error', handleError);
+    };
+  }, [cameraLoading]);
+
 
   const sharePost = (post) => {
     const shareText = `"${post.caption}" - This helped me feel less alone today. Check out Ibasho 💫`;
@@ -435,11 +463,18 @@ const SeenlyApp = () => {
             autoPlay
             playsInline
             muted
-            webkit-playsinline="true"
+            webkit-playsinline=""
+            x5-playsinline=""
             className="absolute inset-0 w-full h-full object-cover"
             style={{
-              transform: 'scaleX(-1)', // Mirror for selfie mode
+              transform: 'scaleX(-1)',
               WebkitTransform: 'scaleX(-1)'
+            }}
+            onLoadedData={() => {
+              // Additional fallback for iOS
+              if (videoRef.current && !cameraOpen) {
+                videoRef.current.play().catch(console.error);
+              }
             }}
           />
         )}
