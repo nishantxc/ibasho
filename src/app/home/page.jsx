@@ -190,11 +190,16 @@ const SeenlyApp = () => {
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
+      console.log('Stream:', stream);
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
 
         // Add iOS-specific play promise handling
         const playPromise = videoRef.current.play();
+
+        console.log('Play Promise:', playPromise);
+        
         
         // Handle browsers that don't support play promises
         if (playPromise !== undefined) {
@@ -453,7 +458,6 @@ const SeenlyApp = () => {
     </motion.div>
   );
 
-  // Fix: Simplified PhotoCapture with single video element
   const PhotoCapture = () => (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
@@ -608,6 +612,7 @@ const SeenlyApp = () => {
             className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
             whileHover={{ scale: 1.02 }}
           >
+            <img src={post.photo} alt="Shared moment" className="w-full h-48 object-cover" />
             <div className="flex items-center justify-between mb-4">
               <span
                 className={`px-3 py-1 rounded-full text-sm font-mono ${post.mood === 'Grateful'
