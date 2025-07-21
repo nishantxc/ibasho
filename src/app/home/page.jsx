@@ -69,7 +69,7 @@ const SeenlyApp = () => {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-      isCameraOpen(true);
+      // isCameraOpen(true);
     } catch (err) {  
       console.error("Camera error:", err);
     }
@@ -324,7 +324,7 @@ const SeenlyApp = () => {
         )}
 
         {/* Controls if camera is on */}
-        {cameraOpen && (
+        {!cameraOpen && (
           <div className="absolute inset-0 flex items-end justify-center pb-4 z-20">
             <div className="flex space-x-4">
               <motion.button
