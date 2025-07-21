@@ -1,55 +1,91 @@
-import React from "react";
-import { motion } from "framer-motion";
+import React from 'react';
+import { motion } from 'framer-motion';
 
 const moodOptions = ['Grateful', 'Raw', 'Hopeful', 'Calm', 'Overwhelmed'];
 
-const CheckInForm = ({ caption, moodTag, setMoodTag, handleCaption, submitEntry, photoData, error }) => {
+const CheckInForm = ({ 
+  caption, 
+  moodTag, 
+  setMoodTag, 
+  handleCaption, 
+  submitEntry, 
+  photoData,
+  error 
+}) => {
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-lg shadow-lg p-6 mb-6">
-      <textarea
-        value={caption}
-        onChange={handleCaption}
-        placeholder="How are you feeling? (100 characters)"
-        maxLength={100}
-        className="w-full h-24 p-4 border rounded-lg font-mono text-gray-800 placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-pink-300"
-        style={{ fontFamily: 'Caveat, cursive' }}
-        aria-label="Describe your feeling"
-      />
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      className="bg-white rounded-lg shadow-lg p-6 mb-6"
+    >
+      <div className="mb-4">
+        <label className="block text-sm text-gray-500 font-mono mb-2">
+          How are you feeling?
+        </label>
+        <textarea
+          value={caption}
+          onChange={handleCaption}
+          placeholder="Describe your current feelings (100 characters)"
+          maxLength={100}
+          className="w-full h-24 p-4 border rounded-lg font-mono text-gray-800 placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-pink-300"
+          style={{ fontFamily: 'Caveat, cursive' }}
+          aria-label="Describe your feeling"
+        />
+        <div className="text-right text-xs text-gray-500 mt-1 font-mono">
+          {caption.length}/100
+        </div>
+      </div>
 
-      <div className="mt-4">
-        <label className="text-sm text-gray-500 font-mono" htmlFor="mood-select">Mood:</label>
-        <select
-          id="mood-select"
-          value={moodTag}
-          onChange={(e) => setMoodTag(e.target.value)}
-          className="ml-2 p-2 border rounded-lg font-mono"
-          aria-label="Select mood"
-        >
-          <option value="">Select a mood</option>
+      <div className="mb-6">
+        <label className="block text-sm text-gray-500 font-mono mb-2">
+          Select your mood:
+        </label>
+        <div className="grid grid-cols-3 gap-2">
           {moodOptions.map((mood) => (
-            <option key={mood} value={mood}>{mood}</option>
+            <motion.button
+              key={mood}
+              type="button"
+              className={`px-3 py-2 rounded-full text-sm font-mono ${
+                moodTag === mood
+                  ? 'bg-pink-200 text-gray-800'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+              onClick={() => setMoodTag(mood)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {mood}
+            </motion.button>
           ))}
-        </select>
+        </div>
       </div>
 
-      <div className="flex justify-between items-center mt-4">
-        <span className="text-sm text-gray-500 font-mono">{caption && caption?.length}/100</span>
-
-        <motion.button
-          onClick={submitEntry}
-          disabled={!photoData || !caption || !moodTag}
-          className="px-6 py-3 bg-blue-200 rounded-full text-gray-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-300 transition-colors"
-          whileHover={{ scale: photoData && caption && moodTag ? 1.05 : 1 }}
-          whileTap={{ scale: photoData && caption && moodTag ? 0.95 : 1 }}
-          aria-label="Submit Entry"
+      {error && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-red-500 text-sm mb-4 font-mono p-2 bg-red-50 rounded"
         >
-          Capture this moment
-        </motion.button>
-      </div>
+          {error}
+        </motion.div>
+      )}
 
-      {error && <p className="text-red-500 text-sm mt-2 font-mono">{error}</p>}
+      <motion.button
+        onClick={submitEntry}
+        disabled={!photoData || !caption || !moodTag}
+        className={`w-full py-3 rounded-full text-gray-800 font-medium transition-colors ${
+          photoData && caption && moodTag
+            ? 'bg-pink-300 hover:bg-pink-400'
+            : 'bg-gray-200 opacity-50 cursor-not-allowed'
+        }`}
+        whileHover={photoData && caption && moodTag ? { scale: 1.02 } : {}}
+        whileTap={photoData && caption && moodTag ? { scale: 0.98 } : {}}
+        aria-label="Submit Entry"
+      >
+        {photoData ? "Save This Moment" : "Capture a Photo First"}
+      </motion.button>
     </motion.div>
   );
 };
 
-export default React.memo(CheckInForm); // prevent re-render unless props change
+export default React.memo(CheckInForm);
