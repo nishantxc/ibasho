@@ -62,49 +62,49 @@ const SeenlyApp = () => {
     }
   }, []);
 
-  // const startCamera = async () => {
-  //   try {
-  //     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-  //     if (videoRef.current) {
-  //       videoRef.current.srcObject = stream;
-  //       await videoRef.current.play();
-  //     }
-  //     isCameraOpen(true);
-  //   } catch (err) {  
-  //     console.error("Camera error:", err);
-  //   }
-  // };
-
   const startCamera = async () => {
-    setCameraLoading(true);
-    setError('');
     try {
-      let stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current
-            .play()
-            .then(() => {
-              console.log('Camera started successfully');
-            })
-            .catch((err) => {
-              setError('Failed to start video. Try again or check permissions.');
-              console.error('Video play error:', err);
-            });
-        };
+        await videoRef.current.play();
       }
-
       isCameraOpen(true);
-      setCameraLoading(false);
-    } catch (err) {
-      setError('Camera access failed. Please allow camera permissions or check device settings.');
-      console.error('Error accessing camera:', err);
-      setCameraLoading(false);
+    } catch (err) {  
+      console.error("Camera error:", err);
     }
   };
+
+  // const startCamera = async () => {
+  //   setCameraLoading(true);
+  //   setError('');
+  //   try {
+  //     let stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+
+  //     if (videoRef.current) {
+  //       videoRef.current.srcObject = stream;
+
+  //       videoRef.current.onloadedmetadata = () => {
+  //         videoRef.current
+  //           .play()
+  //           .then(() => {
+  //             console.log('Camera started successfully');
+  //           })
+  //           .catch((err) => {
+  //             setError('Failed to start video. Try again or check permissions.');
+  //             console.error('Video play error:', err);
+  //           });
+  //       };
+  //     }
+
+  //     isCameraOpen(true);
+  //     setCameraLoading(false);
+  //   } catch (err) {
+  //     setError('Camera access failed. Please allow camera permissions or check device settings.');
+  //     console.error('Error accessing camera:', err);
+  //     setCameraLoading(false);
+  //   }
+  // };
 
 
   const capturePhoto = () => {
