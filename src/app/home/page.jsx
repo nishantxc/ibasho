@@ -6,21 +6,21 @@ import { Book, House, MessageCircle, MessageCircleHeart, Star } from 'lucide-rea
 import WhisperPage from "@/components/Whisper"
 
 // Separate CheckInForm component to fix re-rendering issues
-const CheckInForm = React.memo(({ 
-  caption, 
-  moodTag, 
-  setMoodTag, 
-  handleCaption, 
-  submitEntry, 
+const CheckInForm = React.memo(({
+  caption,
+  moodTag,
+  setMoodTag,
+  handleCaption,
+  submitEntry,
   photoData,
-  error 
+  error
 }) => {
   const moodOptions = ['Grateful', 'Raw', 'Hopeful', 'Calm', 'Overwhelmed'];
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }} 
-      animate={{ opacity: 1, y: 0 }} 
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       className="bg-white rounded-lg shadow-lg p-6 mb-6"
     >
       <div className="mb-4">
@@ -50,11 +50,10 @@ const CheckInForm = React.memo(({
             <motion.button
               key={mood}
               type="button"
-              className={`px-3 py-2 rounded-full text-sm font-mono ${
-                moodTag === mood
+              className={`px-3 py-2 rounded-full text-sm font-mono ${moodTag === mood
                   ? 'bg-pink-200 text-gray-800'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                }`}
               onClick={() => setMoodTag(mood)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -66,7 +65,7 @@ const CheckInForm = React.memo(({
       </div>
 
       {error && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="text-red-500 text-sm mb-4 font-mono p-2 bg-red-50 rounded"
@@ -78,11 +77,10 @@ const CheckInForm = React.memo(({
       <motion.button
         onClick={submitEntry}
         disabled={!photoData || !caption || !moodTag}
-        className={`w-full py-3 rounded-full text-gray-800 font-medium transition-colors ${
-          photoData && caption && moodTag
+        className={`w-full py-3 rounded-full text-gray-800 font-medium transition-colors ${photoData && caption && moodTag
             ? 'bg-pink-300 hover:bg-pink-400'
             : 'bg-gray-200 opacity-50 cursor-not-allowed'
-        }`}
+          }`}
         whileHover={photoData && caption && moodTag ? { scale: 1.02 } : {}}
         whileTap={photoData && caption && moodTag ? { scale: 0.98 } : {}}
         aria-label="Submit Entry"
@@ -182,37 +180,84 @@ const SeenlyApp = () => {
     setError('');
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
+      // iOS Safari requires specific constraints
+      const constraints = {
+        video: {
           facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      });
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 }
+        },
+        audio: false // Explicitly disable audio for iOS
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        
-        // Wait for video to be ready before setting camera open
-        const videoLoadPromise = new Promise((resolve, reject) => {
-          videoRef.current.onloadedmetadata = () => {
-            videoRef.current.play()
-              .then(() => {
-                // Only set camera open after video is actually playing
-                // setCameraOpen(true);
-                setCameraLoading(false);
-                resolve();
-              })
-              .catch(reject);
-          };
-          videoRef.current.onerror = reject;
-        });
 
-        await videoLoadPromise;
+        // iOS Safari specific video setup
+        videoRef.current.setAttribute('playsinline', true);
+        videoRef.current.setAttribute('webkit-playsinline', true);
+        videoRef.current.muted = true;
+
+        // Handle the loadedmetadata event properly for iOS
+        const handleVideoReady = () => {
+          console.log('Video metadata loaded');
+
+          // Force play on iOS - must be in user gesture context
+          videoRef.current.play()
+            .then(() => {
+              console.log('Video playing successfully');
+              setCameraOpen(true);
+              setCameraLoading(false);
+            })
+            .catch((playError) => {
+              console.error('Video play failed:', playError);
+              setError(`Video playback failed: ${playError.message}`);
+              setCameraLoading(false);
+
+              // Clean up stream on play failure
+              stream.getTracks().forEach(track => track.stop());
+            });
+        };
+
+        const handleVideoError = (error) => {
+          console.error('Video error:', error);
+          setError('Video loading failed. Please try again.');
+          setCameraLoading(false);
+
+          // Clean up stream on error
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        // Remove any existing listeners
+        videoRef.current.removeEventListener('loadedmetadata', handleVideoReady);
+        videoRef.current.removeEventListener('error', handleVideoError);
+
+        // Add event listeners
+        videoRef.current.addEventListener('loadedmetadata', handleVideoReady);
+        videoRef.current.addEventListener('error', handleVideoError);
+
+        // iOS Safari sometimes needs a slight delay
+        setTimeout(() => {
+          if (videoRef.current && videoRef.current.readyState >= 2) {
+            handleVideoReady();
+          }
+        }, 100);
       }
     } catch (err) {
-      console.error('Camera error:', err);
-      setError('Camera access failed. Please allow camera permissions.');
+      console.error('Camera access error:', err);
+      let errorMessage = 'Camera access failed.';
+
+      if (err.name === 'NotAllowedError') {
+        errorMessage = 'Camera permission denied. Please allow camera access in Settings.';
+      } else if (err.name === 'NotFoundError') {
+        errorMessage = 'No camera found on this device.';
+      } else if (err.name === 'NotSupportedError') {
+        errorMessage = 'Camera not supported in this browser.';
+      }
+
+      setError(errorMessage);
       setCameraLoading(false);
       setCameraOpen(false);
     }
@@ -224,26 +269,43 @@ const SeenlyApp = () => {
       const video = videoRef.current;
       const context = canvas.getContext('2d');
 
-      // Ensure video is ready
+      // Ensure video is ready and has dimensions
       if (video.videoWidth === 0 || video.videoHeight === 0) {
-        setError('Camera not ready. Please wait...');
+        setError('Camera not ready. Please wait a moment and try again.');
         return;
       }
 
+      // Set canvas dimensions to match video
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0);
 
       try {
-        const dataURL = canvas.toDataURL('image/jpeg', 0.8);
-        setPhotoData(dataURL);
-        setCameraOpen(false);
+        // Mirror the image back for capture (since we mirror display)
+        context.scale(-1, 1);
+        context.drawImage(video, -video.videoWidth, 0, video.videoWidth, video.videoHeight);
 
-        // Stop camera stream
-        const stream = video.srcObject;
-        stream.getTracks().forEach(track => track.stop());
-        video.srcObject = null;
+        // Convert to data URL with good quality
+        const dataURL = canvas.toDataURL('image/jpeg', 0.9);
+
+        // Validate the captured image
+        if (dataURL && dataURL.length > 1000) { // Basic validation
+          setPhotoData(dataURL);
+          setCameraOpen(false);
+
+          // Stop camera stream
+          const stream = video.srcObject;
+          if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            video.srcObject = null;
+          }
+
+          // Clear any existing errors
+          setError('');
+        } else {
+          setError('Failed to capture image. Please try again.');
+        }
       } catch (err) {
+        console.error('Capture error:', err);
         setError('Error capturing photo. Please try again.');
       }
     }
@@ -365,24 +427,38 @@ const SeenlyApp = () => {
       className="bg-white rounded-lg shadow-lg p-6 mb-6"
     >
       <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-square max-w-md mx-auto border-4 border-white shadow-md">
-        
-        {/* Single video element - only show when camera is active */}
-        {/* {cameraOpen && ( */}
+
+        {/* Video element with iOS-specific attributes */}
+        {cameraOpen && (
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
+            webkit-playsinline="true"
             className="absolute inset-0 w-full h-full object-cover"
+            style={{
+              transform: 'scaleX(-1)', // Mirror for selfie mode
+              WebkitTransform: 'scaleX(-1)'
+            }}
           />
-        {/* )} */}
+        )}
 
-        {/* Loading indicator */}
+        {/* Enhanced loading indicator */}
         {cameraLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
             <div className="text-center">
-              <div className="animate-spin text-4xl mb-4">📷</div>
+              <motion.div
+                className="text-4xl mb-4"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              >
+                📷
+              </motion.div>
               <p className="font-mono text-gray-600">Starting camera...</p>
+              <p className="font-mono text-xs text-gray-500 mt-2">
+                If stuck, try refreshing the page
+              </p>
             </div>
           </div>
         )}
@@ -405,7 +481,7 @@ const SeenlyApp = () => {
             <div className="flex space-x-4">
               <motion.button
                 onClick={capturePhoto}
-                className="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center"
+                className="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center text-2xl"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 aria-label="Capture Photo"
@@ -414,7 +490,7 @@ const SeenlyApp = () => {
               </motion.button>
               <motion.button
                 onClick={cancelCamera}
-                className="w-16 h-16 bg-red-200 rounded-full shadow-lg flex items-center justify-center"
+                className="w-16 h-16 bg-red-200 rounded-full shadow-lg flex items-center justify-center text-2xl"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 aria-label="Cancel Camera"
@@ -432,7 +508,7 @@ const SeenlyApp = () => {
             >
               <div className="text-center">
                 <div className="text-6xl mb-4">📷</div>
-                <p className="font-mono">Capture your moment</p>
+                <p className="font-mono">Tap to capture your moment</p>
               </div>
             </motion.button>
           )}
