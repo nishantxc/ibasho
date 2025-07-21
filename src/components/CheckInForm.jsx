@@ -1,9 +1,10 @@
 import React from 'react';
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 
 const moodOptions = ['Grateful', 'Raw', 'Hopeful', 'Calm', 'Overwhelmed'];
 
-const CheckInForm = ({ 
+const CheckInForm = memo(({ 
   caption, 
   moodTag, 
   setMoodTag, 
@@ -86,6 +87,6 @@ const CheckInForm = ({
       </motion.button>
     </motion.div>
   );
-};
+});
 
 export default React.memo(CheckInForm);
