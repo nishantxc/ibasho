@@ -5,9 +5,17 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { Heart, Mail, X, Eye, MessageCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+type Post = {
+  id: number;
+  image: string;
+  caption: string;
+  mood: string;
+};
+
+
 const IbashoLanding = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPost, setSelectedPost] = useState(null);
+  const [selectedPost, setSelectedPost] = useState<Post>();
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { scrollY } = useScroll();
@@ -34,7 +42,7 @@ const IbashoLanding = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   
   useEffect(() => {
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({
         x: (e.clientX / window.innerWidth - 0.5) * 20,
         y: (e.clientY / window.innerHeight - 0.5) * 20
@@ -54,7 +62,7 @@ const IbashoLanding = () => {
     "Sending you softness."
   ];
 
-  const handleEmailSubmit = (e) => {
+  const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email) {
       setIsSubmitted(true);
@@ -400,6 +408,7 @@ const IbashoLanding = () => {
               type="submit"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => router.push('/home')}
               className="w-full px-8 py-4 bg-gradient-to-r from-pink-400 to-blue-400 text-white rounded-full font-medium text-lg shadow-lg"
             >
               {isSubmitted ? 'Welcome to the family' : 'Join the Waitlist'}
