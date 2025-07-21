@@ -180,10 +180,9 @@ const SeenlyApp = () => {
     setError('');
 
     try {
-      // More permissive constraints for iOS
       const constraints = {
         video: {
-          facingMode: 'user', // Start with front camera for better iOS compatibility
+          facingMode: 'environment',
           width: { ideal: 640, max: 1280 },
           height: { ideal: 480, max: 720 }
         }
@@ -194,33 +193,29 @@ const SeenlyApp = () => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
 
-        // Critical iOS Safari setup
-        videoRef.current.setAttribute('playsinline', '');
-        videoRef.current.setAttribute('webkit-playsinline', '');
-        videoRef.current.setAttribute('autoplay', '');
-        videoRef.current.muted = true;
-
-        // Simplified promise-based approach
-        try {
-          await videoRef.current.play();
-          console.log('Video playing successfully');
-          setCameraOpen(true);
-          setCameraLoading(false);
-        } catch (playError) {
-          console.error('Video play failed:', playError);
-
-          // Fallback: try to play again after a short delay
-          setTimeout(async () => {
-            try {
-              await videoRef.current.play();
+        // Add iOS-specific play promise handling
+        const playPromise = videoRef.current.play();
+        
+        // Handle browsers that don't support play promises
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('Video playback started');
               setCameraOpen(true);
               setCameraLoading(false);
-            } catch (retryError) {
-              setError('Camera failed to start. Please try again.');
+            })
+            .catch(error => {
+              console.error('Video play failed:', error);
+              handlePlayError(error, stream);
+            });
+        } else {
+          // Fallback for browsers without play promises
+          setTimeout(() => {
+            if (!videoRef.current.paused) {
+              setCameraOpen(true);
               setCameraLoading(false);
-              stream.getTracks().forEach(track => track.stop());
             }
-          }, 500);
+          }, 100);
         }
       }
     } catch (err) {
@@ -259,6 +254,17 @@ const SeenlyApp = () => {
       setError(errorMessage);
       setCameraLoading(false);
       setCameraOpen(false);
+    }
+  };
+
+  // Add separate error handler for play failures
+  const handlePlayError = (error, stream) => {
+    setCameraLoading(false);
+    setError('Failed to start video playback');
+    stream.getTracks().forEach(track => track.stop());
+    // Additional cleanup
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
   };
 
