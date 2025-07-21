@@ -199,7 +199,7 @@ const SeenlyApp = () => {
             videoRef.current.play()
               .then(() => {
                 // Only set camera open after video is actually playing
-                setCameraOpen(true);
+                // setCameraOpen(true);
                 setCameraLoading(false);
                 resolve();
               })
@@ -367,7 +367,7 @@ const SeenlyApp = () => {
       <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-square max-w-md mx-auto border-4 border-white shadow-md">
         
         {/* Single video element - only show when camera is active */}
-        {cameraOpen && (
+        {/* {cameraOpen && ( */}
           <video
             ref={videoRef}
             autoPlay
@@ -375,7 +375,7 @@ const SeenlyApp = () => {
             muted
             className="absolute inset-0 w-full h-full object-cover"
           />
-        )}
+        {/* )} */}
 
         {/* Loading indicator */}
         {cameraLoading && (

@@ -2,9 +2,7 @@ import React from 'react';
 import { memo } from 'react';
 import { motion } from 'framer-motion';
 
-const moodOptions = ['Grateful', 'Raw', 'Hopeful', 'Calm', 'Overwhelmed'];
-
-const CheckInForm = memo(({ 
+const CheckInForm = React.memo(({ 
   caption, 
   moodTag, 
   setMoodTag, 
@@ -13,6 +11,8 @@ const CheckInForm = memo(({
   photoData,
   error 
 }) => {
+  const moodOptions = ['Grateful', 'Raw', 'Hopeful', 'Calm', 'Overwhelmed'];
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }} 
