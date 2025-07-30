@@ -2,16 +2,20 @@ import React from 'react';
 import { memo } from 'react';
 import { motion } from 'framer-motion';
 
-const CheckInForm = React.memo(({ 
+const CheckInForm = memo(({ 
   caption, 
   moodTag, 
-  setMoodTag, 
-  handleCaption, 
+  setMoodTag,
+  setCaption, 
   submitEntry, 
   photoData,
   error 
 }) => {
   const moodOptions = ['Grateful', 'Raw', 'Hopeful', 'Calm', 'Overwhelmed'];
+
+  const handleCaptionChange = (e) => {
+    setCaption(e.target.value);
+  };
 
   return (
     <motion.div 
@@ -25,7 +29,7 @@ const CheckInForm = React.memo(({
         </label>
         <textarea
           value={caption}
-          onChange={handleCaption}
+          onChange={handleCaptionChange}
           placeholder="Describe your current feelings (100 characters)"
           maxLength={100}
           className="w-full h-24 p-4 border rounded-lg font-mono text-gray-800 placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-pink-300"
@@ -89,4 +93,6 @@ const CheckInForm = React.memo(({
   );
 });
 
-export default React.memo(CheckInForm);
+CheckInForm.displayName = 'CheckInForm';
+
+export default CheckInForm;
