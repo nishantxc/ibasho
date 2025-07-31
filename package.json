@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.8.2",
     "@supabase/supabase-js": "^2.52.0",
     "framer-motion": "^12.23.6",
     "gsap": "^3.13.0",
@@ -16,6 +17,7 @@
     "next": "15.3.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-redux": "^9.2.0",
     "tailwind-animate": "^0.2.10",
     "tailwindcss-animate": "^1.0.7"
   },

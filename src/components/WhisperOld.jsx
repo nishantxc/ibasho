@@ -1,9 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Heart, MessageCircle, Users, Sparkles } from 'lucide-react';
 
-const WhisperPage = () => {
-  const [messages, setMessages] = useState([
+interface Message {
+  id: number;
+  author: string;
+  content: string;
+  timestamp: string;
+  mood: string;
+  likes: number;
+}
+
+interface User {
+  id: number;
+  name: string;
+  mood: string;
+  lastSeen: string;
+}
+
+const WhisperPage: React.FC = () => {
+  const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
       author: 'gentle soul',
@@ -46,7 +62,7 @@ const WhisperPage = () => {
     }
   ]);
 
-  const [onlineUsers] = useState([
+  const [onlineUsers] = useState<User[]>([
     { id: 1, name: 'gentle soul', mood: '#tender', lastSeen: 'now' },
     { id: 2, name: 'quiet observer', mood: '#grateful', lastSeen: 'now' },
     { id: 3, name: 'midnight dreamer', mood: '#floating', lastSeen: '3m' },
@@ -57,10 +73,9 @@ const WhisperPage = () => {
     { id: 8, name: 'gentle rain', mood: '#melancholy', lastSeen: 'now' }
   ]);
 
-  const [newMessage, setNewMessage] = useState('');
-  const [selectedMood, setSelectedMood] = useState('#tender');
-  const [likedMessages, setLikedMessages] = useState(new Set());
-  const messagesEndRef = useRef(null);
+  const [newMessage, setNewMessage] = useState<string>('');
+  const [selectedMood, setSelectedMood] = useState<string>('#tender');
+  const [likedMessages, setLikedMessages] = useState<Set<number>>(new Set());
 
   const moods = [
     { tag: '#tender', color: '#F7DAD9' },
@@ -73,7 +88,7 @@ const WhisperPage = () => {
     { tag: '#steady', color: '#E8FFE8' }
   ];
 
-  const generateAnonymousName = () => {
+  const generateAnonymousName = (): string => {
     const adjectives = ['gentle', 'quiet', 'soft', 'tender', 'whispered', 'midnight', 'morning', 'peaceful'];
     const nouns = ['soul', 'heart', 'dreamer', 'observer', 'warrior', 'spirit', 'thoughts', 'breath'];
     return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
@@ -81,7 +96,7 @@ const WhisperPage = () => {
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
-      const message = {
+      const message: Message = {
         id: messages.length + 1,
         author: generateAnonymousName(),
         content: newMessage,
@@ -89,50 +104,41 @@ const WhisperPage = () => {
         mood: selectedMood,
         likes: 0
       };
-      
       setMessages(prev => [...prev, message]);
       setNewMessage('');
-      
-      // Auto-scroll to bottom
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
-  const handleLike = (messageId) => {
+  const handleLike = (messageId: number) => {
     if (!likedMessages.has(messageId)) {
       setLikedMessages(prev => new Set([...prev, messageId]));
-      setMessages(prev => prev.map(msg => 
+      setMessages(prev => prev.map(msg =>
         msg.id === messageId ? { ...msg, likes: msg.likes + 1 } : msg
       ));
     }
   };
 
-  const getMoodColor = (mood) => {
+  const getMoodColor = (mood: string) => {
     const moodObj = moods.find(m => m.tag === mood);
     return moodObj ? moodObj.color : '#F9F9F9';
   };
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="w-full flex h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Sidebar - Online Users */}
       <motion.div
         initial={{ x: -300, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="w-80 bg-white bg-opacity-60 backdrop-blur-sm border-r border-gray-200 p-6 overflow-y-auto"
+        className="w-80 bg-white bg-opacity-60 backdrop-blur-sm border-r border-gray-200 p-6"
+        style={{ overflow: 'hidden' }}
       >
         <div className="mb-8">
           <motion.div
@@ -190,7 +196,7 @@ const WhisperPage = () => {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 p-6 space-y-4" style={{ overflow: 'hidden', minHeight: 0 }}>
           <AnimatePresence>
             {messages.map((message, index) => (
               <motion.div
@@ -217,7 +223,6 @@ const WhisperPage = () => {
                     <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
                       <p className="text-gray-800 leading-relaxed">{message.content}</p>
                     </div>
-                    
                     {/* Like Button */}
                     <div className="flex items-center space-x-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <motion.button
@@ -239,7 +244,6 @@ const WhisperPage = () => {
               </motion.div>
             ))}
           </AnimatePresence>
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Message Input */}
@@ -279,7 +283,7 @@ const WhisperPage = () => {
                 onKeyPress={handleKeyPress}
                 placeholder="Share what's on your heart..."
                 className="w-full px-4 py-3 bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl border border-gray-200 focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-opacity-50 resize-none"
-                rows="2"
+                rows={2}
                 maxLength={280}
               />
               <div className="absolute bottom-2 right-2 text-xs text-gray-400">

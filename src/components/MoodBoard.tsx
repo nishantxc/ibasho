@@ -1,28 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Heart, Share2, Eye } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
+import type { SharedPost } from '@/store/slices/journalEntrySlice';
 
-interface SharedPost {
-  id: number;
-  caption: string;
-  mood: string;
-  reactions: number;
-}
+const MoodBoard: React.FC = () => {
+  const sharedPosts = useSelector((state: RootState) => state.sharedPosts);
 
-interface MoodBoardProps {
-  sharedPosts?: SharedPost[];
-}
-
-const MoodBoard: React.FC<MoodBoardProps> = ({ 
-  sharedPosts = [
-    { id: 1, caption: "Found peace in my morning coffee", mood: "Grateful", reactions: 12 },
-    { id: 2, caption: "Struggling but still here", mood: "Raw", reactions: 8 },
-    { id: 3, caption: "Small wins today", mood: "Hopeful", reactions: 15 },
-    { id: 4, caption: "The rain felt like permission to be sad", mood: "Tender", reactions: 23 },
-    { id: 5, caption: "Breathing felt difficult today", mood: "Overwhelmed", reactions: 6 },
-    { id: 6, caption: "Sunset reminded me that endings can be beautiful", mood: "Hopeful", reactions: 18 },
-  ]
-}) => {
   const getMoodColor = (mood: string) => {
     const colors: { [key: string]: string } = {
       'Grateful': 'bg-green-100 text-green-800',
@@ -51,7 +36,7 @@ const MoodBoard: React.FC<MoodBoardProps> = ({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-6"
+      className="w-full space-y-6"
     >
       <div className="text-center mb-8">
         <h1 className="text-2xl font-serif text-gray-800 mb-2">Community Moods</h1>
@@ -61,58 +46,61 @@ const MoodBoard: React.FC<MoodBoardProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sharedPosts.map((post, index) => (
-          <motion.div
-            key={post.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className={`bg-gradient-to-br ${getMoodGradient(post.mood)} rounded-lg p-6 shadow-lg border border-white/50`}
-            whileHover={{ y: -5, scale: 1.02 }}
-          >
-            <div className="mb-4">
-              <p className="text-gray-800 font-mono text-sm italic mb-3">
-                "{post.caption}"
-              </p>
-              
-              <div className="flex items-center justify-between">
-                <span className={`px-3 py-1 rounded-full text-xs font-mono ${getMoodColor(post.mood)}`}>
-                  {post.mood}
-                </span>
-                
-                <div className="flex items-center gap-2">
-                  <motion.button
-                    className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <Heart size={14} />
-                    <span className="text-xs">{post.reactions}</span>
-                  </motion.button>
-                  
-                  <motion.button
-                    className="text-gray-500 hover:text-blue-500 transition-colors"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <Share2 size={14} />
-                  </motion.button>
+        {sharedPosts.length === 0 ? (
+          <div className="col-span-full text-center text-gray-400 font-mono">No shared moments yet.</div>
+        ) : (
+          sharedPosts.map((post: SharedPost, index: number) => (
+            <motion.div
+              key={post.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className={`bg-gradient-to-br ${getMoodGradient(post.mood)} rounded-lg p-2 shadow-lg border border-white/50`}
+              whileHover={{ y: -5, scale: 1.02 }}
+            >              
+              <div className="relative">
+                <img src={post.photo} alt="Journal entry" className="w-full h-48 object-cover rounded-lg py-2" />
+              </div>
+              <div className="mb-4">
+                <p className="text-gray-800 font-mono text-sm italic mb-3">
+                  "{post.caption}"
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className={`px-3 py-1 rounded-full text-xs font-mono ${getMoodColor(post.mood)}`}>
+                    {post.mood}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <motion.button
+                      className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <Heart size={14} />
+                      <span className="text-xs">{post.reactions}</span>
+                    </motion.button>
+                    <motion.button
+                      className="text-gray-500 hover:text-blue-500 transition-colors"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    > 
+                      <Share2 size={14} />
+                    </motion.button>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="flex items-center justify-between text-xs text-gray-500 font-mono">
-              <span>Shared anonymously</span>
-              <motion.button
-                className="flex items-center gap-1 hover:text-gray-700 transition-colors"
-                whileHover={{ scale: 1.05 }}
-              >
-                <Eye size={12} />
-                View
-              </motion.button>
-            </div>
-          </motion.div>
-        ))}
+              <div className="flex items-center justify-between text-xs text-gray-500 font-mono">
+                <span>Shared anonymously</span>
+                <motion.button
+                  className="flex items-center gap-1 hover:text-gray-700 transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <Eye size={12} />
+                  View
+                </motion.button>
+              </div>
+            </motion.div>
+          ))
+        )}
       </div>
 
       <motion.div

@@ -11,7 +11,7 @@ const Navigation = React.memo(({ currentView, setCurrentView }: NavigationProps)
   <motion.nav 
     initial={{ opacity: 0, y: 20 }} 
     animate={{ opacity: 1, y: 0 }} 
-    className="w-full flex flex-col md:flex-row items-center gap-4 mb-8"
+    className="w-[25%] flex flex-col items-center gap-4 mb-8"
   >
     {[
       { key: 'home', label: 'Check In', icon: <House /> },

@@ -51,7 +51,7 @@ const SeenlyApp = () => {
       caption,
       mood: moodTag,
       timestamp: new Date().toISOString(),
-      rotation: Math.random() * 6 - 3,
+      rotation: Math.random() * 12 - 6,
     };
     setJournalEntries(prev => [...prev, newEntry]);
     setPhotoData(null);
@@ -328,7 +328,7 @@ const SeenlyApp = () => {
       <Navigation currentView={currentView} setCurrentView={setCurrentView} />
 
       {currentView === 'home' && (
-        <div>
+        <div className='w-full'>
           <DailyPrompt />
           <PhotoCapture
             photoData={photoData}
