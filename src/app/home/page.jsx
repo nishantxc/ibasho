@@ -27,6 +27,7 @@ const SeenlyApp = () => {
   const [cameraLoading, setCameraLoading] = useState(false);
   const [catMode, setCatMode] = useState(false);
   const [error, setError] = useState('');
+  const [selectedPostForMessage, setSelectedPostForMessage] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -359,9 +360,25 @@ const SeenlyApp = () => {
 
       {currentView === 'journal' && <JournalTimeline journalEntries={journalEntries} onBack={() => setCurrentView('home')} />}
 
-      {currentView === 'community' && <MoodBoard sharedPosts={sharedPosts} />}
+      {currentView === 'community' && (
+        <MoodBoard 
+          sharedPosts={sharedPosts} 
+          onSendMessage={(post) => {
+            setSelectedPostForMessage(post);
+            setCurrentView('whisper');
+          }}
+        />
+      )}
 
-      {currentView === 'whisper' && <WhisperPage />}
+      {currentView === 'whisper' && (
+        <WhisperPage 
+          initialPostReference={selectedPostForMessage}
+          onBackToCommunity={() => {
+            setSelectedPostForMessage(null);
+            setCurrentView('community');
+          }}
+        />
+      )}
 
       {catMode && (
         <motion.div

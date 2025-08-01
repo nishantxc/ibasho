@@ -67,7 +67,7 @@ const SignupForm = ({ onSignupSuccess }) => {
       >
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-pink-100">
           {/* Floating kitten friend */}
-          <motion.div
+          {/* <motion.div
             className="absolute -top-6 -right-6 cursor-pointer text-5xl"
             animate={{ y: [0, -15, 0], rotate: [0, 10, -10, 0] }}
             transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
@@ -86,7 +86,7 @@ const SignupForm = ({ onSignupSuccess }) => {
                 You've got this! 🌟
               </motion.div>
             )}
-          </motion.div>
+          </motion.div> */}
 
           {/* Header */}
           <motion.div

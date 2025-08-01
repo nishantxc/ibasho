@@ -32,7 +32,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             </motion.button> */}
           </div>
         </header>
-        <div className="container mx-auto px-4 py-8 flex gap-8">
+        <div className="container mx-auto px-4 py-8 md:flex gap-8">
           {children}
         </div>
       </Provider>

@@ -1,78 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Heart, MessageCircle, Users, Sparkles } from 'lucide-react';
+import { Send, Heart, MessageCircle, Users, Sparkles, Image } from 'lucide-react';
+import { supabase } from '../../supabase/Supabase';
+import type { Message, User } from '../types/types';
 
-interface Message {
-  id: number;
-  author: string;
-  content: string;
-  timestamp: string;
-  mood: string;
-  likes: number;
+interface WhisperPageProps {
+  initialPostReference?: {
+    id: number;
+    caption: string;
+    photo: string;
+    mood: string;
+    owner_id: string;
+  };
+  onBackToCommunity?: () => void;
 }
 
-interface User {
-  id: number;
-  name: string;
-  mood: string;
-  lastSeen: string;
-}
-
-const WhisperPage: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      author: 'gentle soul',
-      content: 'The rain today feels like permission to be sad.',
-      timestamp: '2 min ago',
-      mood: '#tender',
-      likes: 3
-    },
-    {
-      id: 2,
-      author: 'quiet observer',
-      content: 'Found a moment of peace in my morning coffee. Small victories.',
-      timestamp: '5 min ago',
-      mood: '#grateful',
-      likes: 7
-    },
-    {
-      id: 3,
-      author: 'midnight dreamer',
-      content: 'Sometimes I wonder if anyone else feels this untethered.',
-      timestamp: '12 min ago',
-      mood: '#floating',
-      likes: 5
-    },
-    {
-      id: 4,
-      author: 'soft warrior',
-      content: 'Crying felt good today. Like releasing what I was carrying.',
-      timestamp: '18 min ago',
-      mood: '#release',
-      likes: 9
-    },
-    {
-      id: 5,
-      author: 'tender heart',
-      content: 'The sunset reminded me that endings can be beautiful too.',
-      timestamp: '24 min ago',
-      mood: '#hope',
-      likes: 12
-    }
-  ]);
-
-  const [onlineUsers] = useState<User[]>([
-    { id: 1, name: 'gentle soul', mood: '#tender', lastSeen: 'now' },
-    { id: 2, name: 'quiet observer', mood: '#grateful', lastSeen: 'now' },
-    { id: 3, name: 'midnight dreamer', mood: '#floating', lastSeen: '3m' },
-    { id: 4, name: 'soft warrior', mood: '#release', lastSeen: 'now' },
-    { id: 5, name: 'tender heart', mood: '#hope', lastSeen: '1m' },
-  ]);
-
+const WhisperPage: React.FC<WhisperPageProps> = ({ 
+  initialPostReference, 
+  onBackToCommunity 
+}) => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
   const [newMessage, setNewMessage] = useState<string>('');
   const [selectedMood, setSelectedMood] = useState<string>('#tender');
-  const [likedMessages, setLikedMessages] = useState<Set<number>>(new Set());
+  const [likedMessages, setLikedMessages] = useState<Set<string>>(new Set());
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const moods = [
     { tag: '#tender', color: '#F7DAD9' },
@@ -85,24 +38,109 @@ const WhisperPage: React.FC = () => {
     { tag: '#steady', color: '#E8FFE8' }
   ];
 
+  // Get current user on component mount
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+      if (user) {
+        await fetchMessages();
+        await fetchOnlineUsers();
+      }
+      setLoading(false);
+    };
+    getCurrentUser();
+  }, []);
+
+  // Fetch messages from Supabase
+  const fetchMessages = async () => {
+    if (!currentUser) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select(`
+          *,
+          sender:users!messages_sender_id_fkey(name),
+          receiver:users!messages_receiver_id_fkey(name)
+        `)
+        .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const formattedMessages = data?.map((msg: any) => ({
+        ...msg,
+        sender_name: msg.sender?.name || 'Anonymous',
+        is_own_message: msg.sender_id === currentUser.id
+      })) || [];
+
+      setMessages(formattedMessages);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  };
+
+  // Fetch online users
+  const fetchOnlineUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, username')
+        .limit(10);
+
+      if (error) throw error;
+      console.log(data, "data");
+      setOnlineUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching online users:', error);
+    }
+  };
+
   const generateAnonymousName = (): string => {
     const adjectives = ['gentle', 'quiet', 'soft', 'tender', 'whispered', 'midnight', 'morning', 'peaceful'];
     const nouns = ['soul', 'heart', 'dreamer', 'observer', 'warrior', 'spirit', 'thoughts', 'breath'];
     return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
   };
 
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      const message: Message = {
-        id: messages.length + 1,
-        author: generateAnonymousName(),
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !currentUser) return;
+
+    try {
+      const messageData = {
+        // sender_id: currentUser.id,
         content: newMessage,
-        timestamp: 'now',
-        mood: selectedMood,
-        likes: 0
+        username: "something"
+        // mood: selectedMood,
+        // ...(initialPostReference && {
+        //   post_reference: initialPostReference
+        // })
       };
-      setMessages(prev => [...prev, message]);
+
+      const { data, error } = await supabase
+        .from('messages')
+        .insert([messageData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add the new message to the local state
+      const newMessageObj: Message = {
+        ...data,
+        sender_name: currentUser.user_metadata?.name || generateAnonymousName(),
+        is_own_message: true
+      };
+
+      setMessages(prev => [...prev, newMessageObj]);
       setNewMessage('');
+      
+      // Clear post reference after sending
+      if (initialPostReference && onBackToCommunity) {
+        onBackToCommunity();
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
     }
   };
 
@@ -113,12 +151,26 @@ const WhisperPage: React.FC = () => {
     }
   };
 
-  const handleLike = (messageId: number) => {
+  const handleLike = async (messageId: string) => {
     if (!likedMessages.has(messageId)) {
-      setLikedMessages(prev => new Set([...prev, messageId]));
-      setMessages(prev => prev.map(msg =>
-        msg.id === messageId ? { ...msg, likes: msg.likes + 1 } : msg
-      ));
+      try {
+                 const messageToUpdate = messages.find(m => m.id === messageId);
+         if (!messageToUpdate) return;
+         
+         const { error } = await supabase
+           .from('messages')
+           .update({ likes: messageToUpdate.likes + 1 })
+           .eq('id', messageId);
+
+        if (error) throw error;
+
+        setLikedMessages(prev => new Set([...prev, messageId]));
+        setMessages(prev => prev.map(msg =>
+          msg.id === messageId ? { ...msg, likes: msg.likes + 1 } : msg
+        ));
+      } catch (error) {
+        console.error('Error liking message:', error);
+      }
     }
   };
 
@@ -127,12 +179,31 @@ const WhisperPage: React.FC = () => {
     return moodObj ? moodObj.color : '#F9F9F9';
   };
 
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'now';
+    if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return date.toLocaleDateString();
+  };
+
+  if (loading) {
+    return (
+      <div className="w-full flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading whispers...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full flex h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="w-full flex max-h-[80vh] bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Sidebar - Online Users */}
       <motion.div
-        initial={{ x: -300, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8 }}
         className="w-80 bg-white bg-opacity-60 backdrop-blur-sm border-r border-gray-200 p-6"
         style={{ overflow: 'hidden' }}
@@ -149,13 +220,6 @@ const WhisperPage: React.FC = () => {
             </p>
           </motion.div>
 
-          <div className="flex items-center space-x-2 mb-6">
-            <Users className="w-5 h-5 text-gray-500" />
-            <span className="text-sm text-gray-600 font-medium">
-              {onlineUsers.filter(u => u.lastSeen === 'now').length} souls present
-            </span>
-          </div>
-
           <div className="space-y-3">
             {onlineUsers.map((user, index) => (
               <motion.div
@@ -168,20 +232,15 @@ const WhisperPage: React.FC = () => {
                 <div className="relative">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: getMoodColor(user.mood) }}
+                    // style={{ backgroundColor: getMoodColor(user.mood) }}
                   >
                     <Sparkles className="w-4 h-4 text-gray-600" />
                   </div>
-                  {user.lastSeen === 'now' && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
-                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 truncate">{user.name}</p>
+                  <p className="text-sm font-medium text-gray-800 truncate">{user.username}</p>
                   <div className="flex items-center space-x-2">
                     <span className="text-xs text-gray-500">{user.mood}</span>
-                    <span className="text-xs text-gray-400">•</span>
-                    <span className="text-xs text-gray-400">{user.lastSeen === 'now' ? 'online' : user.lastSeen}</span>
                   </div>
                 </div>
               </motion.div>
@@ -192,8 +251,37 @@ const WhisperPage: React.FC = () => {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
+        {/* Post Reference Header */}
+        {initialPostReference && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white bg-opacity-80 backdrop-blur-sm border-b border-gray-200 p-4"
+          >
+            <div className="flex items-center space-x-3">
+              <img 
+                src={initialPostReference.photo} 
+                alt="Post reference" 
+                className="w-12 h-12 object-cover rounded-lg"
+              />
+              <div className="flex-1">
+                <p className="text-sm text-gray-800 font-medium">Replying to a post</p>
+                <p className="text-xs text-gray-600 truncate">"{initialPostReference.caption}"</p>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onBackToCommunity}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+
         {/* Messages */}
-        <div className="flex-1 p-6 space-y-4" style={{ overflow: 'hidden', minHeight: 0 }}>
+        <div className="h-full flex-1 p-6 space-y-4 overflow-y-scroll">
           <AnimatePresence>
             {messages.map((message, index) => (
               <motion.div
@@ -201,27 +289,39 @@ const WhisperPage: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="group"
+                className={`group ${message.is_own_message ? 'flex justify-end' : ''}`}
               >
-                <div className="flex items-start space-x-3 mb-2">
+                <div className={`flex items-start space-x-3 mb-2 max-w-[70%] ${message.is_own_message ? 'flex-row-reverse space-x-reverse' : ''}`}>
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                     style={{ backgroundColor: getMoodColor(message.mood) }}
                   >
                     <MessageCircle className="w-5 h-5 text-gray-600" />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className="text-sm font-medium text-gray-800">{message.author}</span>
+                  <div className={`flex-1 ${message.is_own_message ? 'text-right' : ''}`}>
+                    <div className={`flex items-center space-x-2 mb-1 ${message.is_own_message ? 'justify-end' : ''}`}>
+                      <span className="text-sm font-medium text-gray-800">{message.sender_name}</span>
                       <span className="text-xs text-gray-500">{message.mood}</span>
                       <span className="text-xs text-gray-400">•</span>
-                      <span className="text-xs text-gray-400">{message.timestamp}</span>
+                      <span className="text-xs text-gray-400">{formatTimestamp(message.created_at)}</span>
                     </div>
-                    <div className="bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
+                    
+                    {/* Post Reference */}
+                    {message.post_reference && (
+                      <div className="mb-2 p-2 bg-gray-100 rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <Image className="w-4 h-4 text-gray-500" />
+                          <span className="text-xs text-gray-600">Referenced post</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className={`bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl p-4 shadow-sm ${message.is_own_message ? 'bg-blue-100' : ''}`}>
                       <p className="text-gray-800 leading-relaxed">{message.content}</p>
                     </div>
+                    
                     {/* Like Button */}
-                    <div className="flex items-center space-x-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className={`flex items-center space-x-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity ${message.is_own_message ? 'justify-end' : ''}`}>
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
@@ -245,41 +345,14 @@ const WhisperPage: React.FC = () => {
 
         {/* Message Input */}
         <div className="border-t border-gray-200 bg-white bg-opacity-60 backdrop-blur-sm p-6">
-          {/* Mood Selector */}
-          {/* <div className="mb-4">
-            <p className="text-sm text-gray-600 mb-2 font-medium">How are you feeling?</p>
-            <div className="flex flex-wrap gap-2">
-              {moods.map(mood => (
-                <motion.button
-                  key={mood.tag}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setSelectedMood(mood.tag)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                    selectedMood === mood.tag
-                      ? 'ring-2 ring-gray-400 ring-opacity-50'
-                      : 'hover:ring-2 hover:ring-gray-300 hover:ring-opacity-50'
-                  }`}
-                  style={{ 
-                    backgroundColor: mood.color,
-                    color: '#374151'
-                  }}
-                >
-                  {mood.tag}
-                </motion.button>
-              ))}
-            </div>
-          </div> */}
-
-          {/* Message Input */}
           <div className="flex space-x-4">
             <div className="flex-1 relative">
               <textarea
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Share what's on your heart..."
-                className="w-full px-4 py-3 bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl border border-gray-200 focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-opacity-50 resize-none"
+                placeholder={initialPostReference ? "Send a message about this post..." : "Share what's on your heart..."}
+                className="text-black/80 w-full px-4 py-3 bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl border border-gray-200 focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-opacity-50 resize-none"
                 rows={2}
                 maxLength={280}
               />

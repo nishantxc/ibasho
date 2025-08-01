@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { signInWithEmail, signInWithGoogle } from '../../supabase/Supabase';
+import { signInWithEmail, signInWithGoogle, checkUserInTable } from '../../supabase/Supabase';
+import { useRouter } from 'next/navigation';
 
 const LoginForm = ({ onLoginSuccess }) => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState(null);
   const [kittenClicked, setKittenClicked] = useState(false);
+
+  const router = useRouter();
 
   const handleKittenClick = () => {
     setKittenClicked(true);
@@ -24,6 +27,27 @@ const LoginForm = ({ onLoginSuccess }) => {
         setIsLoading(false);
         return;
       }
+
+      // Check if user exists in the "user" table
+      if (result.data?.user?.id) {
+        const { exists, error } = await checkUserInTable(result.data.user.id);
+
+        if (error) {
+          console.error('Error checking user table:', error);
+          setAuthError('An error occurred while checking your profile');
+          setIsLoading(false);
+          return;
+        }
+
+        if (exists) {
+          // User exists in table, redirect to home
+          router.push('/home');
+        } else {
+          // User doesn't exist in table, redirect to onboarding
+          router.push('/onboarding');
+        }
+      }
+
       if (onLoginSuccess) onLoginSuccess();
     } catch (error) {
       setAuthError(error.message);
@@ -41,6 +65,9 @@ const LoginForm = ({ onLoginSuccess }) => {
         setAuthError(error.message);
         setIsLoading(false);
       }
+      // router.push('/onboarding')
+      // Note: For Google OAuth, the redirect will happen automatically
+      // The user will be redirected to /auth/callback which should handle the user table check
     } catch (error) {
       setAuthError(error.message);
       setIsLoading(false);
@@ -48,7 +75,16 @@ const LoginForm = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-orange-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="relative min-h-screen bg-gradient-to-br from-pink-50 via-orange-50 to-blue-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 z-0 opacity-50 pointer-events-none">
+        <img
+          src="/quan.jpg"
+          alt="Moodboard"
+          fill
+          style={{ objectFit: "cover" }}
+          className="blur-sm w-full max-h-screen "
+        />
+      </div>
       <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23FAF7F0\' fill-opacity=\'0.3\'%3E%3Ccircle cx=\'30\' cy=\'30\' r=\'1\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-30"></div>
       <motion.div
         initial={{ opacity: 0, x: -50 }}
@@ -58,7 +94,7 @@ const LoginForm = ({ onLoginSuccess }) => {
       >
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-pink-100">
           {/* Floating kitten friend */}
-          <motion.div
+          {/* <motion.div
             className="absolute -top-6 -right-6 cursor-pointer text-5xl"
             animate={{ y: [0, -15, 0], rotate: [0, 10, -10, 0] }}
             transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
@@ -77,7 +113,7 @@ const LoginForm = ({ onLoginSuccess }) => {
                 You've got this! 🌟
               </motion.div>
             )}
-          </motion.div>
+          </motion.div> */}
 
           {/* Header */}
           <motion.div
@@ -104,7 +140,7 @@ const LoginForm = ({ onLoginSuccess }) => {
                 type="email"
                 value={loginData.email}
                 onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-300 font-mono"
+                className="text-gray-500 w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-300 font-mono"
                 placeholder="your.email@example.com"
                 required
               />
@@ -122,7 +158,7 @@ const LoginForm = ({ onLoginSuccess }) => {
                 type="password"
                 value={loginData.password}
                 onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-300 font-mono"
+                className="text-gray-500 w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-300 font-mono"
                 placeholder="Your secure password"
                 required
               />
@@ -150,7 +186,7 @@ const LoginForm = ({ onLoginSuccess }) => {
             {/* Submit button */}
             <motion.button
               type="submit"
-              disabled={isLoading}
+              disabled={true}
               className="w-full py-4 bg-gradient-to-r from-pink-300 to-rose-300 text-gray-800 rounded-xl font-medium hover:from-pink-400 hover:to-rose-400 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               whileHover={{ scale: isLoading ? 1 : 1.02, y: isLoading ? 0 : -2 }}
               whileTap={{ scale: isLoading ? 1 : 0.98 }}
@@ -178,10 +214,10 @@ const LoginForm = ({ onLoginSuccess }) => {
               whileTap={{ scale: isLoading ? 1 : 0.98 }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
-                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
-                <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
-                <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
-                <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+                <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+                <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
+                <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
               </svg>
               <span>Continue with Google</span>
             </motion.button>

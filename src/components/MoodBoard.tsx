@@ -1,11 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Share2, Eye } from 'lucide-react';
+import { Heart, Share2, Eye, MessageCircle, Text, MessageSquareHeart, LucideMessageSquareX, Send } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import type { SharedPost } from '@/store/slices/journalEntrySlice';
 
-const MoodBoard: React.FC = () => {
+interface MoodBoardProps {
+  onSendMessage?: (post: SharedPost) => void;
+}
+
+const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
   const sharedPosts = useSelector((state: RootState) => state.sharedPosts);
 
   const getMoodColor = (mood: string) => {
@@ -30,6 +34,12 @@ const MoodBoard: React.FC = () => {
       'Calm': 'from-teal-50 to-blue-50'
     };
     return gradients[mood] || 'from-gray-50 to-slate-50';
+  };
+
+  const handleSendMessage = (post: SharedPost) => {
+    if (onSendMessage) {
+      onSendMessage(post);
+    }
   };
 
   return (
@@ -57,7 +67,7 @@ const MoodBoard: React.FC = () => {
               transition={{ delay: index * 0.1 }}
               className={`bg-gradient-to-br ${getMoodGradient(post.mood)} rounded-lg p-2 shadow-lg border border-white/50`}
               whileHover={{ y: -5, scale: 1.02 }}
-            >              
+            >
               <div className="relative">
                 <img src={post.photo} alt="Journal entry" className="w-full h-48 object-cover rounded-lg py-2" />
               </div>
@@ -82,8 +92,9 @@ const MoodBoard: React.FC = () => {
                       className="text-gray-500 hover:text-blue-500 transition-colors"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                    > 
-                      <Share2 size={14} />
+                      onClick={() => handleSendMessage(post)}
+                    >
+                      <Send size={14} />
                     </motion.button>
                   </div>
                 </div>
@@ -102,24 +113,6 @@ const MoodBoard: React.FC = () => {
           ))
         )}
       </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="text-center py-8"
-      >
-        <p className="text-gray-600 font-mono text-sm mb-4">
-          Share your own moment to connect with others
-        </p>
-        <motion.button
-          className="bg-pink-300 hover:bg-pink-400 text-gray-800 px-6 py-3 rounded-full font-medium transition-colors"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          Share Your Moment
-        </motion.button>
-      </motion.div>
     </motion.div>
   );
 };
