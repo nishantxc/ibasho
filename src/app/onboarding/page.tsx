@@ -4,13 +4,8 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../../../supabase/Supabase";
 
-// --- CONFIGURE YOUR SUPABASE ---
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 // --- AVATAR OPTIONS (add your own images/SVGs in public/) ---
 const AVATARS = [
