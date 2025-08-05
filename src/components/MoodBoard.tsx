@@ -49,7 +49,7 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
       className="w-full space-y-6"
     >
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-serif text-gray-800 mb-2">Community Moods</h1>
+        <h1 className="text-2xl font-serif text-gray-800 mb-2">Community Feed</h1>
         <p className="text-gray-600 font-mono text-sm">
           Shared moments from others who understand
         </p>
@@ -73,7 +73,7 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
               </div>
               <div className="mb-4">
                 <p className="text-gray-800 font-mono text-sm italic mb-3">
-                  "{post.caption}"
+                  {post.caption}
                 </p>
                 <div className="flex items-center justify-between">
                   <span className={`px-3 py-1 rounded-full text-xs font-mono ${getMoodColor(post.mood)}`}>

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Book, House, MessageCircle, MessageCircleHeart, Star } from 'lucide-react';
+import { Book, House, Loader, LogOut, MessageCircle, MessageCircleHeart, Star } from 'lucide-react';
 import WhisperPage from "@/components/Whisper"
 import CheckInForm from "@/components/CheckInForm"
 import Navigation from "@/components/Navigation"
@@ -11,6 +11,11 @@ import PhotoCapture from "@/components/PhotoCapture"
 import JournalTimeline from "@/components/JournalTimeline"
 import MoodBoard from "@/components/MoodBoard"
 import AppLayout from "@/components/AppLayout"
+import { div } from 'framer-motion/client';
+import { api } from '@/utils/api';
+import { useRouter } from 'next/navigation';
+import { signOut } from '../../../supabase/Supabase';
+import { supabase } from '../../../supabase/Supabase';
 
 const SeenlyApp = () => {
   const [currentView, setCurrentView] = useState('home');
@@ -27,13 +32,43 @@ const SeenlyApp = () => {
   const [cameraLoading, setCameraLoading] = useState(false);
   const [catMode, setCatMode] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
   const [selectedPostForMessage, setSelectedPostForMessage] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
+  const router = useRouter();
+
   // Konami code for cat mode
   const konamiCode = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65];
   const [konamiIndex, setKonamiIndex] = useState(0);
+
+    const handleGoogleLogout = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await signOut();
+      if (response) {
+        router.push('/login');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to logout');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUser = async () => {
+    try {
+      const response = await api.users.getUser();
+      setUser(response.username || null);
+      console.log('User:', response);
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+      setError('Failed to fetch user');
+    }
+  };
 
   // Fix: Memoize the caption handler to prevent re-renders
   const handleCaption = (e) => {
@@ -41,25 +76,93 @@ const SeenlyApp = () => {
   };
 
   // Fix: Memoize the submit handler
-  const submitEntry = useCallback(() => {
+  const submitEntry = useCallback(async () => {
+    setLoading(true)
     if (!photoData || !caption || !moodTag) {
       setError('Please capture a photo, add a caption, and select a mood.');
       return;
     }
+
+
+    let imageUrl = null;
+    if (photoData) {
+      try {
+        // Convert base64 to blob
+        const base64Data = photoData.split(',')[1];
+        const byteCharacters = atob(base64Data);
+        const byteArrays = [];
+        
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteArrays.push(byteCharacters.charCodeAt(i));
+        }
+        
+        const blob = new Blob([new Uint8Array(byteArrays)], { type: 'image/jpeg' });
+
+        // Create unique filename
+        const fileName = `${moodTag}_${Date.now()}.jpg`;
+        
+        // Upload blob to Supabase
+        const { data, error: uploadError } = await supabase.storage
+          .from('ibasho')
+          .upload(fileName, blob, {
+            contentType: 'image/jpeg',
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error("Image upload error:", uploadError);
+          setError(`Failed to upload image: ${uploadError.message}`);
+          setLoading(false);
+          return;
+        }
+
+        // Get public URL
+        const { data: publicUrlData } = supabase.storage
+          .from('ibasho')
+          .getPublicUrl(fileName);
+
+        imageUrl = publicUrlData.publicUrl;
+        
+      } catch (err) {
+        console.error("Image processing error:", err);
+        setError("Failed to process image for upload");
+        setLoading(false);
+        return;
+      }
+    }
+
+
     const newEntry = {
       id: Date.now(),
-      photo: photoData,
+      photo: imageUrl,
       caption,
       mood: moodTag,
       timestamp: new Date().toISOString(),
       rotation: Math.random() * 12 - 6,
     };
+
+    try {
+      const response = await api.journal.createEntry({
+        caption: newEntry.caption,
+        mood: newEntry.mood,
+        mood_score: 8,
+        // user_id: user.id,
+        images: newEntry.photo,
+      })
+      console.log('Journal entry created:', response);
+      // setJournalEntries(prev => [newEntry.entry, ...prev])
+    } catch (err) {
+      console.log('Error creating journal entry:', err);
+    }
+
     setJournalEntries(prev => [...prev, newEntry]);
     setPhotoData(null);
     setCaption('');
     setMoodTag('');
     setCurrentView('journal');
     setError('');
+    setLoading(false)
   }, [photoData, caption, moodTag]);
 
   useEffect(() => {
@@ -92,6 +195,8 @@ const SeenlyApp = () => {
     if (typeof window !== 'undefined' && window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
       setError('Camera requires HTTPS. Please deploy to a secure server.');
     }
+    fetchUser();
+
   }, []);
 
   const startCamera = async () => {
@@ -110,13 +215,13 @@ const SeenlyApp = () => {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
       console.log('Stream:', stream);
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
 
         const playPromise = videoRef.current.play();
-        console.log('Play Promise:', playPromise);        
-        
+        console.log('Play Promise:', playPromise);
+
         if (playPromise !== undefined) {
           playPromise
             .then(() => {
@@ -324,74 +429,117 @@ const SeenlyApp = () => {
     </motion.div>
   );
 
+  // useEffect(() => {
+  //   fetchUser();
+  // }, [])
+
+
+  if (loading) {
+    return (
+      <div className='w-full h-screen flex items-center justify-center'>
+        <Loader className="animate-spin text-4xl text-gray-500 mx-auto mt-20" />
+      </div>
+    )
+  }
+
   return (
-    <AppLayout>
-      <Navigation currentView={currentView} setCurrentView={setCurrentView} />
+    <div>
+      <header className="w-full h-[10vh] flex justify-between bg-gradient-to-r from-pink-100/80 to-blue-100/80 backdrop-blur-sm">
+        <div className="w-full container mx-auto px-4 flex items-center justify-between">
+          <motion.h1
+            className="text-3xl font-light text-gray-800 font-serif"
+            whileHover={{ scale: 1.05 }}
+            aria-label="Ibasho Logo"
+          >
+            ibasho <span className='text-sm font-light'>(居場所)</span>
+          </motion.h1>
 
-      {currentView === 'home' && (
-        <div className='w-full'>
-          <DailyPrompt />
-          <PhotoCapture
-            photoData={photoData}
-            setPhotoData={setPhotoData}
-            cameraOpen={cameraOpen}
-            setCameraOpen={setCameraOpen}
-            cameraLoading={cameraLoading}
-            startCamera={startCamera}
-            capturePhoto={capturePhoto}
-            cancelCamera={cancelCamera}
-            handleFileUpload={handleFileUpload}
-            videoRef={videoRef}
-            canvasRef={canvasRef}
-            error={error}
-          />
-          <CheckInForm
-            caption={caption}
-            setCaption={setCaption}
-            moodTag={moodTag}
-            setMoodTag={setMoodTag}
-            handleCaption={handleCaption}
-            submitEntry={submitEntry}
-            photoData={photoData}
-            error={error}
-          />
+          <div className='flex gap-4 items-center justify-center'>
+
+            <motion.button
+              // onClick={() => setCurrentView('home')}
+              className='text-gray-500 rounded-full border border-gray-500 px-3 py-3 font-mono text-lg font-bold'
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              aria-label="Go to Check-In"
+              onClick={() => handleGoogleLogout()}
+            >
+              <LogOut size={16} />
+            </motion.button>
+            <div className='text-gray-500 rounded-full border border-gray-500 px-4 py-2 font-mono text-lg font-bold'>
+              {user && <p>{user}</p>}
+            </div>
+          </div>
         </div>
-      )}
+      </header>
+      <div className="container mx-auto px-4 py-8 md:flex gap-8">
+        <Navigation currentView={currentView} setCurrentView={setCurrentView} />
 
-      {currentView === 'journal' && <JournalTimeline journalEntries={journalEntries} onBack={() => setCurrentView('home')} />}
+        {currentView === 'home' && (
+          <div className='w-full'>
+            <DailyPrompt />
+            <PhotoCapture
+              photoData={photoData}
+              setPhotoData={setPhotoData}
+              cameraOpen={cameraOpen}
+              setCameraOpen={setCameraOpen}
+              cameraLoading={cameraLoading}
+              startCamera={startCamera}
+              capturePhoto={capturePhoto}
+              cancelCamera={cancelCamera}
+              handleFileUpload={handleFileUpload}
+              videoRef={videoRef}
+              canvasRef={canvasRef}
+              error={error}
+            />
+            <CheckInForm
+              caption={caption}
+              setCaption={setCaption}
+              moodTag={moodTag}
+              setMoodTag={setMoodTag}
+              handleCaption={handleCaption}
+              submitEntry={submitEntry}
+              photoData={photoData}
+              error={error}
+            />
+          </div>
+        )}
 
-      {currentView === 'community' && (
-        <MoodBoard 
-          sharedPosts={sharedPosts} 
-          onSendMessage={(post) => {
-            setSelectedPostForMessage(post);
-            setCurrentView('whisper');
-          }}
-        />
-      )}
+        {currentView === 'journal' && <JournalTimeline journalEntries={journalEntries} onBack={() => setCurrentView('home')} />}
 
-      {currentView === 'whisper' && (
-        <WhisperPage 
-          initialPostReference={selectedPostForMessage}
-          onBackToCommunity={() => {
-            setSelectedPostForMessage(null);
-            setCurrentView('community');
-          }}
-        />
-      )}
+        {currentView === 'community' && (
+          <MoodBoard
+            sharedPosts={sharedPosts}
+            onSendMessage={(post) => {
+              setSelectedPostForMessage(post);
+              setCurrentView('whisper');
+            }}
+          />
+        )}
 
-      {catMode && (
-        <motion.div
-          className="fixed bottom-4 right-4 text-4xl z-50"
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          drag
-          dragElastic={0.2}
-        >
-          🐱
-        </motion.div>
-      )}
-    </AppLayout>
+        {currentView === 'whisper' && (
+          <WhisperPage
+            initialPostReference={selectedPostForMessage}
+            onBackToCommunity={() => {
+              setSelectedPostForMessage(null);
+              setCurrentView('community');
+            }}
+          />
+        )}
+
+        {catMode && (
+          <motion.div
+            className="fixed bottom-4 right-4 text-4xl z-50"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            drag
+            dragElastic={0.2}
+          >
+            🐱
+          </motion.div>
+        )}
+      </div>
+    </div>
   );
 };
 

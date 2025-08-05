@@ -18,21 +18,21 @@ const LoginPage = () => {
     checkUser();
   }, []);
 
-  if (isLoggedIn) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-orange-50 to-blue-50 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center"
-        >
-          <h2 className="text-3xl font-serif text-gray-800 mb-4">Welcome!</h2>
-          <p className="text-gray-600 font-mono">You are now logged in.</p>
-        </motion.div>
-      </div>
-    );
-  }
+  // if (isLoggedIn) {
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-orange-50 to-blue-50 flex items-center justify-center p-4">
+  //       <motion.div
+  //         initial={{ opacity: 0, y: 50 }}
+  //         animate={{ opacity: 1, y: 0 }}
+  //         transition={{ duration: 0.8 }}
+  //         className="text-center"
+  //       >
+  //         <h2 className="text-3xl font-serif text-gray-800 mb-4">Welcome!</h2>
+  //         <p className="text-gray-600 font-mono">You are now logged in.</p>
+  //       </motion.div>
+  //     </div>
+  //   );
+  // }
 
   return <LoginForm onLoginSuccess={() => setIsLoggedIn(true)} />;
 };

@@ -5,25 +5,26 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { supabase } from "../../../supabase/Supabase";
+import { api } from "@/utils/api";
+import { useRouter } from "next/navigation";
 
 
 // --- AVATAR OPTIONS (add your own images/SVGs in public/) ---
 const AVATARS = [
-  { key: "window", src: "/window.svg", label: "Window with rain" },
+  { key: "window", src: "/another.png", label: "Window with rain" },
   { key: "books", src: "/japanese.png", label: "Books & tea" },
   { key: "hands", src: "/scar.png", label: "Hands holding light" },
-  { key: "globe", src: "/globe.svg", label: "Soft globe" },
+  { key: "globe", src: "/board.jpg", label: "Soft globe" },
   { key: "sunset", src: "/hailuo.png", label: "Sunset" },
-  // Add more as needed
 ];
 
 // --- SOFT USERNAME GENERATOR ---
-const SOFT_NAMES = [
-  "softsunset", "bluewindow", "quietstorm", "gentleleaf", "warmtea", "dawnlight", "sagecloud"
-];
-function generateUsername() {
-  return "@" + SOFT_NAMES[Math.floor(Math.random() * SOFT_NAMES.length)];
-}
+// const SOFT_NAMES = [
+//   "softsunset", "bluewindow", "quietstorm", "gentleleaf", "warmtea", "dawnlight", "sagecloud"
+// ];
+// function generateUsername() {
+//   return SOFT_NAMES[Math.floor(Math.random() * SOFT_NAMES.length)];
+// }
 
 // --- USERNAME VALIDATION ---
 function validateUsername(username: string) {
@@ -35,34 +36,30 @@ export default function OnboardingPage() {
   const [usernameValid, setUsernameValid] = useState(true);
   const [usernameUnique, setUsernameUnique] = useState(true);
   const [checking, setChecking] = useState(false);
-  const [avatar, setAvatar] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<string | undefined>("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // Real-time uniqueness check
-  useEffect(() => {
-    if (!username || !validateUsername(username)) {
-      setUsernameUnique(true);
-      return;
-    }
-    setChecking(true);
-    const check = setTimeout(async () => {
-      // Replace 'profiles' and 'username' with your actual Supabase table/column
-      const { data } = await supabase
-        .from("users")
-        .select("username")
-        .eq("username", username)
-        .single();
-      setUsernameUnique(!data);
-      setChecking(false);
-    }, 500);
-    return () => clearTimeout(check);
-  }, [username]);
+  const router = useRouter();
 
   // Handle submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    try {
+      const response = await api.users.createUser({
+        username: username,
+        bio: "",
+        avatar: avatar,
+      });
+      console.log("User created:", response);
+      router.push('/home')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create profile");
+      return;
+    }
+
     if (!username || !validateUsername(username)) {
       setUsernameValid(false);
       setError("Please enter a valid username.");
@@ -118,21 +115,21 @@ export default function OnboardingPage() {
                 placeholder="enter your username"
                 value={username}
                 onChange={e => {
-                  setUsername(e.target.value.replace(/^@/, ""));
+                  setUsername(e.target.value);
                   setUsernameValid(true);
                   setError("");
                 }}
                 maxLength={20}
                 autoFocus
               />
-              <button
+              {/* <button
                 type="button"
                 className="rounded-lg px-3 py-2 bg-[#e9ecef] text-[#7d5a50] font-sans text-sm hover:bg-[#d6e2e9] transition"
                 onClick={() => setUsername(generateUsername())}
                 tabIndex={-1}
               >
                 Generate
-              </button>
+              </button> */}
             </div>
             <div className="text-xs mt-1 text-[#b39286]">
               Only lowercase letters, numbers, and underscores.

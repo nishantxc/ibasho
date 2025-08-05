@@ -41,7 +41,7 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
       
       {!photoData && !cameraOpen && (
         <div className="space-y-4">
-          <motion.button
+          {/* <motion.button
             onClick={startCamera}
             disabled={cameraLoading}
             className="w-full py-3 bg-pink-300 hover:bg-pink-400 text-gray-800 rounded-full font-medium transition-colors flex items-center justify-center gap-2"
@@ -50,7 +50,7 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
           >
             <Camera size={20} />
             {cameraLoading ? 'Starting Camera...' : 'Take Photo'}
-          </motion.button>
+          </motion.button> */}
           
           <div className="relative">
             <input

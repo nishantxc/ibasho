@@ -2,13 +2,18 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Using environment variables for the remote Supabase instance
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://uvsqpmaejmaelmgtyjax.supabase.co'
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2c3FwbWFlam1hZWxtZ3R5amF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NTAyNDUsImV4cCI6MjA2ODMyNjI0NX0.I4PtgWzFq_x-uKu8idA7zdfgeC3OY0mBc2LekIjYKzE'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+})
 
 // Authentication helper functions
-export const signInWithEmail = async (email, password) => {
+export const signInWithEmail = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -16,7 +21,7 @@ export const signInWithEmail = async (email, password) => {
   return { data, error }
 }
 
-export const signUpWithEmail = async (email, password) => {
+export const signUpWithEmail = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -45,12 +50,12 @@ export const getCurrentUser = async () => {
 }
 
 // Check if user exists in the "users" table
-export const checkUserInTable = async (userId) => {
+export const checkUserInTable = async (userId: String) => {
   const { data, error } = await supabase
     .from('users')
     .select('user_id')
     .eq('user_id', userId)
     .single()
-  
+
   return { exists: !!data, error }
 }

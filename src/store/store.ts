@@ -1,9 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit'
 import sharedPostsReducer from './slices/journalEntrySlice'
+import userProfileReducer from './slices/userSlice'
 
 export const store = configureStore({
   reducer: {
     sharedPosts: sharedPostsReducer,
+    userProfile: userProfileReducer,
   },
 })
 

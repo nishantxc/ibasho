@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signInWithEmail, signInWithGoogle, checkUserInTable } from '../../supabase/Supabase';
 import { useRouter } from 'next/navigation';
+import { useDispatch } from 'react-redux';
+import { adduserProfile } from '@/store/slices/userSlice';
+import { api } from '@/utils/api';
 
 const LoginForm = ({ onLoginSuccess }) => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -10,6 +13,8 @@ const LoginForm = ({ onLoginSuccess }) => {
   const [kittenClicked, setKittenClicked] = useState(false);
 
   const router = useRouter();
+  const dispatch = useDispatch();
+
 
   const handleKittenClick = () => {
     setKittenClicked(true);
@@ -28,22 +33,18 @@ const LoginForm = ({ onLoginSuccess }) => {
         return;
       }
 
-      // Check if user exists in the "user" table
       if (result.data?.user?.id) {
-        const { exists, error } = await checkUserInTable(result.data.user.id);
+        const response = await api.users.getUser(result.data.user.id);
 
-        if (error) {
-          console.error('Error checking user table:', error);
-          setAuthError('An error occurred while checking your profile');
-          setIsLoading(false);
-          return;
-        }
-
-        if (exists) {
-          // User exists in table, redirect to home
+        // if (error) {
+        //   console.error('Error checking user table:', error);
+        //   setAuthError('An error occurred while checking your profile');
+        //   setIsLoading(false);
+        //   return;
+        // }
+        if (response) {
           router.push('/home');
         } else {
-          // User doesn't exist in table, redirect to onboarding
           router.push('/onboarding');
         }
       }
@@ -60,11 +61,14 @@ const LoginForm = ({ onLoginSuccess }) => {
     setIsLoading(true);
     setAuthError(null);
     try {
-      const { error } = await signInWithGoogle();
+      const { data, error } = await signInWithGoogle();
       if (error) {
         setAuthError(error.message);
         setIsLoading(false);
       }
+      dispatch(adduserProfile(data))
+      console.log(data, "google data");
+      
       // router.push('/onboarding')
       // Note: For Google OAuth, the redirect will happen automatically
       // The user will be redirected to /auth/callback which should handle the user table check
@@ -80,7 +84,6 @@ const LoginForm = ({ onLoginSuccess }) => {
         <img
           src="/quan.jpg"
           alt="Moodboard"
-          fill
           style={{ objectFit: "cover" }}
           className="blur-sm w-full max-h-screen "
         />
@@ -186,7 +189,7 @@ const LoginForm = ({ onLoginSuccess }) => {
             {/* Submit button */}
             <motion.button
               type="submit"
-              disabled={true}
+              // disabled={true}
               className="w-full py-4 bg-gradient-to-r from-pink-300 to-rose-300 text-gray-800 rounded-xl font-medium hover:from-pink-400 hover:to-rose-400 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               whileHover={{ scale: isLoading ? 1 : 1.02, y: isLoading ? 0 : -2 }}
               whileTap={{ scale: isLoading ? 1 : 0.98 }}
@@ -207,7 +210,7 @@ const LoginForm = ({ onLoginSuccess }) => {
             {/* Google Sign In Button */}
             <motion.button
               type="button"
-              onClick={handleGoogleSignIn}
+              onClick={() => handleGoogleSignIn()}
               disabled={isLoading}
               className="w-full py-4 bg-white border border-gray-300 text-gray-800 rounded-xl font-medium hover:bg-gray-50 transition-all duration-300 shadow-md flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               whileHover={{ scale: isLoading ? 1 : 1.02, y: isLoading ? 0 : -2 }}
