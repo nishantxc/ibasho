@@ -5,6 +5,7 @@ import PolaroidModal from './PolaroidModal';
 import { JournalEntry } from '@/types/types';
 import Image from 'next/image';
 import { api } from '@/utils/api';
+import moment from 'moment';
 
 interface JournalTimelineProps {
   journalEntries?: JournalEntry[];
@@ -90,7 +91,7 @@ const JournalTimeline: React.FC<JournalTimelineProps> = ({
                   {entry.caption}
                 </p>
                 <p className="text-gray-500 text-xs font-mono">
-                  {new Date(entry.timestamp).toLocaleDateString()} • {entry.mood}
+                  {moment(entry.created_at).format('MMMM D, YYYY')} • {entry.mood}
                 </p>
               </div>
             </motion.div>

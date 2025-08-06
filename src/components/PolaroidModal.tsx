@@ -2,9 +2,10 @@ import React from "react"
 import { JournalEntry } from '@/types/types'
 import { Share, Share2, X } from "lucide-react";
 import { Console } from "console";
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { addSharedPost } from '@/store/slices/journalEntrySlice';
 import { api } from "@/utils/api";
+import { RootState } from "@/store/store";
 
 type PolaroidModalProps = {
     isModalOpen: boolean;
@@ -13,27 +14,33 @@ type PolaroidModalProps = {
 }
 
 const PolaroidModal: React.FC<PolaroidModalProps> = ({ isModalOpen, setIsModalOpen, entry }) => {
+
+    const user = useSelector((state: RootState) => state.userProfile);
     const dispatch = useDispatch();
+
     if (!isModalOpen || !entry) return null;
 
-    const handleShare = async() => {
-        dispatch(addSharedPost({
-            id: entry.id,
-            caption: entry.caption,
-            mood: entry.mood,
-            reactions: 0,
-            photo: entry.images,
-            timestamp: entry.timestamp,
-        }));
+    const handleShare = async () => {
+        console.log("Sharing entry:", user);
+        
+        // dispatch(addSharedPost({
+        //     id: entry.id,
+        //     caption: entry.caption,
+        //     mood: entry.mood,
+        //     reactions: 0,
+        //     photo: entry.images,
+        //     timestamp: entry.timestamp,
+        // }));
 
 
-        try{
+        try {
             const response = await api.posts.createPost({
-                username: entry.username,
-                avatar_url: entry.avatar_url,
+                username: user.user.username,
+                avatar_url: user.user.avatar,
                 photo: entry.images,
                 mood: entry.mood,
                 visibility: 'public',
+                caption: entry.caption,
             });
             console.log("Post shared successfully:", response);
         } catch (error) {
@@ -62,9 +69,9 @@ const PolaroidModal: React.FC<PolaroidModalProps> = ({ isModalOpen, setIsModalOp
                         </p>
                     </div>
                     <div className="flex gap-4 text-right">
-                        <div onClick={handleShare} className="font-mono bg-orange-500 px-1 flex gap-1 items-center justfy-center cursor-pointer text-white hover:bg-white hover:text-orange-500 hover:border hover:border-orange-500">
+                        <div onClick={() => handleShare()} className="font-mono bg-orange-500 px-1 flex gap-1 items-center justfy-center cursor-pointer text-white hover:bg-white hover:text-orange-500 hover:border hover:border-orange-500">
                             <p>share</p>
-                            <Share2 size={16}/>
+                            <Share2 size={16} />
                         </div>
                         <X
                             className="cursor-pointer text-gray-600 hover:text-gray-800 mt-1 ml-auto"
@@ -79,7 +86,7 @@ const PolaroidModal: React.FC<PolaroidModalProps> = ({ isModalOpen, setIsModalOp
                     <div className="w-1/2 p-6 pt-0">
                         <div className="relative overflow-hidden rounded-sm shadow-lg">
                             <img
-                                src={entry.photo}
+                                src={entry.images}
                                 alt="Journal entry"
                                 className="w-full h-96 object-cover"
                                 style={{ filter: 'contrast(1.1) brightness(1.05)' }}

@@ -35,17 +35,13 @@ const LoginForm = ({ onLoginSuccess }) => {
 
       if (result.data?.user?.id) {
         const response = await api.users.getUser(result.data.user.id);
-        console.log('response', response);
-        dispatch(adduserProfile(response))
-        // if (error) {
-        //   console.error('Error checking user table:', error);
-        //   setAuthError('An error occurred while checking your profile');
-        //   setIsLoading(false);
-        //   return;
-        // }
+        console.log('API Response:', response);
         if (response) {
+          console.log('Dispatching user profile:', response);
+          dispatch(adduserProfile(response));
           router.push('/home');
         } else {
+          console.log('No user profile found, redirecting to onboarding');
           router.push('/onboarding');
         }
       }
@@ -62,18 +58,30 @@ const LoginForm = ({ onLoginSuccess }) => {
     setIsLoading(true);
     setAuthError(null);
     try {
-      const { data, error } = await signInWithGoogle();
-      if (error) {
-        setAuthError(error.message);
+      const result = await signInWithGoogle();
+      if (result.error) {
+        setAuthError(result.error.message);
         setIsLoading(false);
+        return;
       }
-      console.log(data, "google data");
-      
-      // router.push('/onboarding')
-      // Note: For Google OAuth, the redirect will happen automatically
-      // The user will be redirected to /auth/callback which should handle the user table check
+
+      if (result.data?.user?.id) {
+        const response = await api.users.getUser(result.data.user.id);
+        console.log('API Response (Google):', response);
+        if (response) {
+          console.log('Dispatching user profile (Google):', response);
+          dispatch(adduserProfile(response));
+          router.push('/home');
+        } else {
+          console.log('No user profile found (Google), redirecting to onboarding');
+          router.push('/onboarding');
+        }
+      }
+
+      if (onLoginSuccess) onLoginSuccess();
     } catch (error) {
       setAuthError(error.message);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -208,7 +216,7 @@ const LoginForm = ({ onLoginSuccess }) => {
               )}
             </motion.button>
             {/* Google Sign In Button */}
-            <motion.button
+            {/* <motion.button
               type="button"
               onClick={() => handleGoogleSignIn()}
               disabled={isLoading}
@@ -223,6 +231,17 @@ const LoginForm = ({ onLoginSuccess }) => {
                 <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
               </svg>
               <span>Continue with Google</span>
+            </motion.button> */}
+            <motion.button
+              type="button"
+              onClick={() => router.push('/signup')}
+              disabled={isLoading}
+              className="w-full py-2 bg-white text-gray-800 rounded-xl font-medium hover:bg-gray-50 transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              whileHover={{ scale: isLoading ? 1 : 1.02, y: isLoading ? 0 : -2 }}
+              whileTap={{ scale: isLoading ? 1 : 0.98 }}
+            >
+              <span className="text-gray-500">Don't have an account? <span className='text-blue-500'>Sign up
+              </span></span>
             </motion.button>
           </motion.form>
           {/* Footer comfort text */}

@@ -30,12 +30,11 @@ async function getUserFromToken(request: NextRequest) {
 
 // Types based on database schema
 type PostVisibility = 'public' | 'private' | 'friends-only' | 'scheduled';
-type PostStatus = 'active' | 'flagged' | 'archived' | 'deleted';
 
 export async function POST(req: NextRequest) {
   try {
     const user = await getUserFromToken(req);
-    const { username, photo, avatar_url, mood, visibility = 'private' } = await req.json();
+    const { username, photo, avatar_url, mood, caption, visibility = 'private' } = await req.json();
 
     if (!photo) {
       return NextResponse.json({ error: 'photo is required' }, { status: 400 });
@@ -46,6 +45,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid visibility value' }, { status: 400 });
     }
 
+    console.log('Inserting post with data:', {
+      user_id: user.id,
+      username,
+      avatar_url,
+      photo,
+      mood,
+      visibility,
+      caption
+    });
+
     const { data, error } = await supabase
       .from('posts')
       .insert([
@@ -55,18 +64,26 @@ export async function POST(req: NextRequest) {
           avatar_url,
           photo,
           mood,
-          visibility: visibility as PostVisibility,
-          status: 'active' as PostStatus,
-          created_at: new Date().toISOString()
+          visibility,
+          caption
         }
       ])
       .select()
       .single();
+      
+    if (error) {
+      console.error('Supabase error:', error);
+      throw new Error(error.message);
+    }
 
     if (error) throw error;
     return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ error: 'Error creating post' }, { status: 500 });
+    console.error('Error creating post:', error);
+    return NextResponse.json({ 
+      error: 'Error creating post', 
+      details: error instanceof Error ? error.message : String(error) 
+    }, { status: 500 });
   }
 }
 
@@ -84,7 +101,6 @@ export async function GET(req: NextRequest) {
       const { data, error } = await supabase
         .from('posts')
         .select('*')
-        .eq('status', 'active')
         .eq('visibility', 'public')
         .order('created_at', { ascending: false });
       
@@ -95,7 +111,6 @@ export async function GET(req: NextRequest) {
     let query = supabase
       .from('posts')
       .select('*')
-      .eq('status', 'active');
 
     if (visibility) {
       query = query.eq('visibility', visibility);
@@ -120,7 +135,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const user = await getUserFromToken(req);
-    const { id, visibility, status, photo, mood } = await req.json();
+    const { id, visibility, caption, photo, mood } = await req.json();
 
     if (!id) {
       return NextResponse.json({ error: 'Post ID is required' }, { status: 400 });
@@ -139,7 +154,6 @@ export async function PATCH(req: NextRequest) {
 
     const updates: any = {};
     if (visibility) updates.visibility = visibility;
-    if (status) updates.status = status;
     if (photo) updates.photo = photo;
     if (mood) updates.mood = mood;
 
@@ -184,8 +198,6 @@ export async function DELETE(req: NextRequest) {
     // Soft delete by updating status to 'deleted'
     const { data, error } = await supabase
       .from('posts')
-      .update({ status: 'deleted' })
-      .eq('id', id)
       .select()
       .single();
 

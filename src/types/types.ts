@@ -5,7 +5,7 @@ export type JournalEntry = {
     images:string,
     rotation:number,
     mood_score:number,
-    timestamp:string,
+    created_at:string,
 }
 
 export type Message = {
@@ -31,4 +31,18 @@ export type User = {
     username: string;
     mood?: string;
     avatar?: string;
+    bio?: string;
+}
+
+
+export type Post = {
+  id: string;
+  created_at: string;
+  user_id: string;
+  username: string;
+  avatar_url?: string;
+  visibility: "private" | "public" | "friends-only" | "scheduled";
+  caption: string;
+  photo: string;
+  mood?: string;
 }

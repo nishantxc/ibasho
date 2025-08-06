@@ -1,16 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Share2, Eye, MessageCircle, Text, MessageSquareHeart, LucideMessageSquareX, Send } from 'lucide-react';
+import { Heart, Share2, Eye, MessageCircle, Text, MessageSquareHeart, LucideMessageSquareX, Send, Star } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
-import type { SharedPost } from '@/store/slices/journalEntrySlice';
+import { api } from '@/utils/api';
+import { Post } from '@/types/types';
 
 interface MoodBoardProps {
-  onSendMessage?: (post: SharedPost) => void;
+  onSendMessage?: (post: Post) => void;
 }
 
 const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
-  const sharedPosts = useSelector((state: RootState) => state.sharedPosts);
+
+  const [sharedPosts, setSharedPosts] = useState<Post[]>([]);
+
+
+  const { id, username, mood, avatar, bio } = useSelector((state: RootState) => state.userProfile);
+
+  const fetchSharedPosts = async () => {
+    try {
+      const response = await api.posts.getPosts({ limit: 20 });
+      setSharedPosts(response.posts);
+      console.log("Fetched shared posts:", response.posts);
+      // return response.posts;  // Return the fetched posts
+    } catch (error) {
+      console.error("Error fetching shared posts:", error);
+      return [];  // Return an empty array on error
+    }
+  };
 
   const getMoodColor = (mood: string) => {
     const colors: { [key: string]: string } = {
@@ -36,11 +53,16 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
     return gradients[mood] || 'from-gray-50 to-slate-50';
   };
 
-  const handleSendMessage = (post: SharedPost) => {
+  const handleSendMessage = (post: Post) => {
     if (onSendMessage) {
       onSendMessage(post);
     }
   };
+
+  useEffect(() => {
+    console.log("Fetching fetchSharedPosts on mount");
+    fetchSharedPosts();
+  }, []);
 
   return (
     <motion.div
@@ -49,7 +71,7 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
       className="w-full space-y-6"
     >
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-serif text-gray-800 mb-2">Community Feed</h1>
+        <h1 className="text-2xl font-serif text-gray-800 mb-2">Community sdfdsf Feed</h1>
         <p className="text-gray-600 font-mono text-sm">
           Shared moments from others who understand
         </p>
@@ -59,15 +81,16 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
         {sharedPosts.length === 0 ? (
           <div className="col-span-full text-center text-gray-400 font-mono">No shared moments yet.</div>
         ) : (
-          sharedPosts.map((post: SharedPost, index: number) => (
+          sharedPosts.map((post: Post, index: number) => (
             <motion.div
               key={post.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className={`bg-gradient-to-br ${getMoodGradient(post.mood)} rounded-lg p-2 shadow-lg border border-white/50`}
-              whileHover={{ y: -5, scale: 1.02 }}
+              className={`bg-gradient-to-br  rounded-lg p-2 shadow-lg border border-white/50`}
+            // whileHover={{ y: -5, scale: 1.02 }}
             >
+              {/* ${getMoodGradient(post.mood)} */}
               <div className="relative">
                 <img src={post.photo} alt="Journal entry" className="w-full h-48 object-cover rounded-lg py-2" />
               </div>
@@ -76,37 +99,42 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
                   {post.caption}
                 </p>
                 <div className="flex items-center justify-between">
-                  <span className={`px-3 py-1 rounded-full text-xs font-mono ${getMoodColor(post.mood)}`}>
+                  {/* <span className={`px-3 py-1 rounded-full text-xs font-mono `}>
                     {post.mood}
-                  </span>
+                  </span> */}
                   <div className="flex items-center gap-2">
                     <motion.button
-                      className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
+                      className="text-[12px] flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
-                      <Heart size={14} />
-                      <span className="text-xs">{post.reactions}</span>
+                      you're not alone.
                     </motion.button>
                     <motion.button
+                      className="text-[12px] flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      looking forward!
+                    </motion.button>
+                    {post.username === username && <motion.button
                       className="text-gray-500 hover:text-blue-500 transition-colors"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => handleSendMessage(post)}
                     >
                       <Send size={14} />
-                    </motion.button>
+                    </motion.button>}
                   </div>
                 </div>
               </div>
               <div className="flex items-center justify-between text-xs text-gray-500 font-mono">
-                <span>Shared anonymously</span>
+                <span>by {post.username}</span>
                 <motion.button
                   className="flex items-center gap-1 hover:text-gray-700 transition-colors"
-                  whileHover={{ scale: 1.05 }}
                 >
                   <Eye size={12} />
-                  View
+                  {post.visibility}
                 </motion.button>
               </div>
             </motion.div>

@@ -16,6 +16,7 @@ import { api } from '@/utils/api';
 import { useRouter } from 'next/navigation';
 import { signOut } from '../../../supabase/Supabase';
 import { supabase } from '../../../supabase/Supabase';
+import { useSelector } from 'react-redux';
 
 const SeenlyApp = () => {
   const [currentView, setCurrentView] = useState('home');
@@ -33,18 +34,21 @@ const SeenlyApp = () => {
   const [catMode, setCatMode] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState(null);
+  // const [user, setUser] = useState(null);
   const [selectedPostForMessage, setSelectedPostForMessage] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   const router = useRouter();
+  const userProfile = useSelector((state) => state.userProfile);
+
+  console.log("userProfile:", userProfile);
 
   // Konami code for cat mode
   const konamiCode = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65];
   const [konamiIndex, setKonamiIndex] = useState(0);
 
-    const handleGoogleLogout = async () => {
+  const handleGoogleLogout = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -59,16 +63,16 @@ const SeenlyApp = () => {
     }
   };
 
-  const fetchUser = async () => {
-    try {
-      const response = await api.users.getUser();
-      setUser(response || null);
-      console.log('User:', response);
-    } catch (error) {
-      console.error('Failed to fetch user:', error);
-      setError('Failed to fetch user');
-    }
-  };
+  // const fetchUser = async () => {
+  //   try {
+  //     const response = await api.users.getUser();
+  //     setUser(response || null);
+  //     console.log('User:', response);
+  //   } catch (error) {
+  //     console.error('Failed to fetch user:', error);
+  //     setError('Failed to fetch user');
+  //   }
+  // };
 
   // Fix: Memoize the caption handler to prevent re-renders
   const handleCaption = (e) => {
@@ -89,7 +93,7 @@ const SeenlyApp = () => {
       try {
         // Get current user session
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           setError('Please login to upload images');
           setLoading(false);
@@ -100,16 +104,16 @@ const SeenlyApp = () => {
         const base64Data = photoData.split(',')[1];
         const byteCharacters = atob(base64Data);
         const byteArrays = [];
-        
+
         for (let i = 0; i < byteCharacters.length; i++) {
           byteArrays.push(byteCharacters.charCodeAt(i));
         }
-        
+
         const blob = new Blob([new Uint8Array(byteArrays)], { type: 'image/jpeg' });
 
         // Create unique filename with user ID
         const fileName = `${user.id}/${moodTag}_${Date.now()}.jpg`;
-        
+
         // Upload blob to Supabase with user metadata
         const { data, error: uploadError } = await supabase.storage
           .from('ibasho')
@@ -136,7 +140,7 @@ const SeenlyApp = () => {
           .getPublicUrl(fileName);
 
         imageUrl = publicUrlData.publicUrl;
-        
+
       } catch (err) {
         console.error("Image processing error:", err);
         setError("Failed to process image for upload");
@@ -208,8 +212,6 @@ const SeenlyApp = () => {
     if (typeof window !== 'undefined' && window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
       setError('Camera requires HTTPS. Please deploy to a secure server.');
     }
-    fetchUser();
-
   }, []);
 
   const startCamera = async () => {
@@ -468,9 +470,10 @@ const SeenlyApp = () => {
           </motion.h1>
 
           <div className='flex gap-4 items-center justify-center'>
-
+            <div className='flex text-gray-500 rounded-full border border-gray-500 px-4 py-2 font-mono text-lg font-light'>
+              hi, {userProfile && <p>{userProfile.user.username}</p>}
+            </div>
             <motion.button
-              // onClick={() => setCurrentView('home')}
               className='text-gray-500 rounded-full border border-gray-500 px-3 py-3 font-mono text-lg font-bold'
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -479,9 +482,6 @@ const SeenlyApp = () => {
             >
               <LogOut size={16} />
             </motion.button>
-            <div className='text-gray-500 rounded-full border border-gray-500 px-4 py-2 font-mono text-lg font-bold'>
-              {user && <p>{user}</p>}
-            </div>
           </div>
         </div>
       </header>
@@ -522,7 +522,6 @@ const SeenlyApp = () => {
 
         {currentView === 'community' && (
           <MoodBoard
-            sharedPosts={sharedPosts}
             onSendMessage={(post) => {
               setSelectedPostForMessage(post);
               setCurrentView('whisper');

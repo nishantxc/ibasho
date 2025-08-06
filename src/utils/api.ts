@@ -1,5 +1,7 @@
 // API utility functions for making calls to our REST endpoints
 
+import { Post } from '@/types/types'
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
 
 // Helper function to get auth token from Supabase
@@ -49,13 +51,14 @@ const apiRequest = async (
     const data = await response.json()
 
     if (!response.ok) {
-      throw new Error(data.error || 'API request failed')
+      console.error('API error response:', data)
+      throw new Error(data.details || data.error || 'API request failed')
     }
 
     return data
   } catch (error) {
     console.error('API request error:', error)
-    throw error
+    throw error instanceof Error ? error : new Error(String(error))
   }
 }
 
@@ -213,31 +216,19 @@ export const journalAPI = {
 
 // Types for Posts
 type PostVisibility = 'public' | 'private' | 'friends-only' | 'scheduled';
-type PostStatus = 'active' | 'flagged' | 'archived' | 'deleted';
-
-interface Post {
-  id: string;
-  created_at: string;
-  user_id: string;
-  username: string;
-  avatar_url?: string;
-  visibility: PostVisibility;
-  status: PostStatus;
-  photo: string;
-  mood?: string;
-}
 
 // Posts API calls
 export const postsAPI = {
   getPosts: async (params?: {
     visibility?: PostVisibility
     userId?: string
-    status?: PostStatus
+    limit?: number
   }) => {
     const searchParams = new URLSearchParams()
     if (params?.visibility) searchParams.append('visibility', params.visibility)
     if (params?.userId) searchParams.append('userId', params.userId)
-    if (params?.status) searchParams.append('status', params.status)
+    if (params?.limit) searchParams.append('limit', params.limit.toString())
+
 
     const queryString = searchParams.toString()
     const endpoint = `/api/posts${queryString ? `?${queryString}` : ''}`
@@ -251,6 +242,7 @@ export const postsAPI = {
     photo: string
     mood?: string
     visibility?: PostVisibility
+    caption?: string
   }) => {
     return apiRequest('/api/posts', {
       method: 'POST',
@@ -260,7 +252,7 @@ export const postsAPI = {
 
   updatePost: async (id: string, data: {
     visibility?: PostVisibility
-    status?: PostStatus
+    caption?: string
     photo?: string
     mood?: string
   }) => {

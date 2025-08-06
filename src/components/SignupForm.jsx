@@ -191,7 +191,7 @@ const SignupForm = ({ onSignupSuccess }) => {
               )}
             </motion.button>
             {/* Google Sign In Button */}
-            <motion.button
+            {/* <motion.button
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isLoading}
@@ -206,7 +206,18 @@ const SignupForm = ({ onSignupSuccess }) => {
                 <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
               </svg>
               <span>Continue with Google</span>
-            </motion.button>
+            </motion.button> */}
+                        <motion.button
+                          type="button"
+                          onClick={() => router.push('/signup')}
+                          disabled={isLoading}
+                          className="w-full py-2 bg-white text-gray-800 rounded-xl font-medium hover:bg-gray-50 transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                          whileHover={{ scale: isLoading ? 1 : 1.02, y: isLoading ? 0 : -2 }}
+                          whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                        >
+                          <span className="text-gray-500">Already have an account? <span className='text-blue-500'>Sign in
+                          </span></span>
+                        </motion.button>
           </motion.form>
           {/* Footer comfort text */}
           <motion.div
