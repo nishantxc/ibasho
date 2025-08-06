@@ -28,13 +28,22 @@ async function getUserFromToken(request: NextRequest) {
   return user
 }
 
+// Types based on database schema
+type PostVisibility = 'public' | 'private' | 'friends-only' | 'scheduled';
+type PostStatus = 'active' | 'flagged' | 'archived' | 'deleted';
+
 export async function POST(req: NextRequest) {
   try {
     const user = await getUserFromToken(req);
-    const { photo, mood, visibility = 'private' } = await req.json();
+    const { username, photo, avatar_url, mood, visibility = 'private' } = await req.json();
 
     if (!photo) {
       return NextResponse.json({ error: 'photo is required' }, { status: 400 });
+    }
+
+    // Validate visibility
+    if (visibility && !['public', 'private', 'friends-only', 'scheduled'].includes(visibility)) {
+      return NextResponse.json({ error: 'Invalid visibility value' }, { status: 400 });
     }
 
     const { data, error } = await supabase
@@ -42,12 +51,13 @@ export async function POST(req: NextRequest) {
       .insert([
         {
           user_id: user.id,
-          username: user.email?.split('@')[0] || 'anonymous',
-          avatar_url: user.user_metadata?.avatar_url,
+          username,
+          avatar_url,
           photo,
           mood,
-          visibility,
-          status: 'active'
+          visibility: visibility as PostVisibility,
+          status: 'active' as PostStatus,
+          created_at: new Date().toISOString()
         }
       ])
       .select()

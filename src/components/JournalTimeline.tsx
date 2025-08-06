@@ -24,6 +24,7 @@ const JournalTimeline: React.FC<JournalTimelineProps> = ({
     try{
       const response = await api.journal.getEntries({ limit: 20 });
       setJournalEntries(response.entries);
+      console.log("Fetched journal entries:", response.entries);
     } catch (err) {
       console.error(err instanceof Error ? err.message : 'Failed to fetch journal entries');
     } finally {
@@ -53,7 +54,7 @@ const JournalTimeline: React.FC<JournalTimelineProps> = ({
       <div className="min-h-[70vh] relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-8 border-8 border-white drop-shadow-md rounded-md">
         <div className="absolute inset-0 z-0 opacity-100 pointer-events-none ">
           <Image
-            src="/stay.jpg"
+            src="/japan.jpg"
             alt="Moodboard"
             fill
             style={{ objectFit: "cover" }}
@@ -79,7 +80,7 @@ const JournalTimeline: React.FC<JournalTimelineProps> = ({
               onClick={() => handleEntryClick(entry)}
             >
               <div className="relative p-2 overflow-visible">
-                <img src={entry.photo} alt="Journal entry" className="w-full h-48 object-cover" />
+                <img src={entry.images} alt="Journal entry" className="w-full h-48 object-cover" />
                 <div className="absolute -top-4 left-4 w-6 h-8 bg-gradient-to-br from-yellow-200 to-yellow-400 opacity-80 transform rotate-12 pointer-events-none"></div>
                 <div className="absolute -top-4 right-4 w-6 h-8 bg-gradient-to-br from-yellow-200 to-yellow-400 opacity-80 transform -rotate-12 pointer-events-none"></div>
               </div>

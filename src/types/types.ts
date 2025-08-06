@@ -2,8 +2,9 @@ export type JournalEntry = {
     caption:string,
     id:number,
     mood:string,
-    photo:string,
+    images:string,
     rotation:number,
+    mood_score:number,
     timestamp:string,
 }
 

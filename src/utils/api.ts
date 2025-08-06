@@ -182,7 +182,8 @@ export const journalAPI = {
     caption: string
     mood?: string
     mood_score?: number
-    images?: string[]
+    images?: string | null
+    rotation?: number
     user_id?: string
   }) => {
     return apiRequest('/api/journal', {
@@ -210,10 +211,77 @@ export const journalAPI = {
   },
 }
 
+// Types for Posts
+type PostVisibility = 'public' | 'private' | 'friends-only' | 'scheduled';
+type PostStatus = 'active' | 'flagged' | 'archived' | 'deleted';
+
+interface Post {
+  id: string;
+  created_at: string;
+  user_id: string;
+  username: string;
+  avatar_url?: string;
+  visibility: PostVisibility;
+  status: PostStatus;
+  photo: string;
+  mood?: string;
+}
+
+// Posts API calls
+export const postsAPI = {
+  getPosts: async (params?: {
+    visibility?: PostVisibility
+    userId?: string
+    status?: PostStatus
+  }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.visibility) searchParams.append('visibility', params.visibility)
+    if (params?.userId) searchParams.append('userId', params.userId)
+    if (params?.status) searchParams.append('status', params.status)
+
+    const queryString = searchParams.toString()
+    const endpoint = `/api/posts${queryString ? `?${queryString}` : ''}`
+    
+    return apiRequest(endpoint, { method: 'GET' }) as Promise<{ posts: Post[] }>
+  },
+
+  createPost: async (data: {
+    username: string
+    avatar_url?: string
+    photo: string
+    mood?: string
+    visibility?: PostVisibility
+  }) => {
+    return apiRequest('/api/posts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }) as Promise<Post>
+  },
+
+  updatePost: async (id: string, data: {
+    visibility?: PostVisibility
+    status?: PostStatus
+    photo?: string
+    mood?: string
+  }) => {
+    return apiRequest('/api/posts', {
+      method: 'PATCH',
+      body: JSON.stringify({ id, ...data }),
+    }) as Promise<{ post: Post }>
+  },
+
+  deletePost: async (id: string) => {
+    return apiRequest(`/api/posts?id=${id}`, {
+      method: 'DELETE',
+    }) as Promise<{ message: string }>
+  },
+}
+
 // Export all APIs
 export const api = {
   auth: authAPI,
   messages: messagesAPI,
   users: usersAPI,
   journal: journalAPI,
+  posts: postsAPI,
 } 

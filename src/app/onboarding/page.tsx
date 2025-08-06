@@ -7,6 +7,8 @@ import Image from "next/image";
 import { supabase } from "../../../supabase/Supabase";
 import { api } from "@/utils/api";
 import { useRouter } from "next/navigation";
+import { adduserProfile } from "@/store/slices/userSlice";
+import { useDispatch } from "react-redux";
 
 
 // --- AVATAR OPTIONS (add your own images/SVGs in public/) ---
@@ -41,6 +43,7 @@ export default function OnboardingPage() {
   const [success, setSuccess] = useState(false);
 
   const router = useRouter();
+  const dispatch = useDispatch();
 
   // Handle submit
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,6 +57,7 @@ export default function OnboardingPage() {
         avatar: avatar,
       });
       console.log("User created:", response);
+      dispatch(adduserProfile(response))
       router.push('/home')
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create profile");

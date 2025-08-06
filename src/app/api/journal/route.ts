@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const user = await getUserFromToken(request)
-    const { caption, mood, mood_score, images } = await request.json()
+    const { caption, mood, mood_score, images, rotation } = await request.json()
 
     if (!caption) {
       return NextResponse.json({ error: 'caption is required' }, { status: 400 })
@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
         mood: mood || 'neutral',
         mood_score: mood_score || 5,
         images: images || [],
+        rotation: rotation || 0,
         created_at: new Date().toISOString(),
         // updated_at: new Date().toISOString()
       })

@@ -35,7 +35,8 @@ const LoginForm = ({ onLoginSuccess }) => {
 
       if (result.data?.user?.id) {
         const response = await api.users.getUser(result.data.user.id);
-
+        console.log('response', response);
+        dispatch(adduserProfile(response))
         // if (error) {
         //   console.error('Error checking user table:', error);
         //   setAuthError('An error occurred while checking your profile');
@@ -66,7 +67,6 @@ const LoginForm = ({ onLoginSuccess }) => {
         setAuthError(error.message);
         setIsLoading(false);
       }
-      dispatch(adduserProfile(data))
       console.log(data, "google data");
       
       // router.push('/onboarding')

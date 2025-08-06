@@ -62,7 +62,7 @@ const SeenlyApp = () => {
   const fetchUser = async () => {
     try {
       const response = await api.users.getUser();
-      setUser(response.username || null);
+      setUser(response || null);
       console.log('User:', response);
     } catch (error) {
       console.error('Failed to fetch user:', error);
@@ -87,6 +87,15 @@ const SeenlyApp = () => {
     let imageUrl = null;
     if (photoData) {
       try {
+        // Get current user session
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          setError('Please login to upload images');
+          setLoading(false);
+          return;
+        }
+
         // Convert base64 to blob
         const base64Data = photoData.split(',')[1];
         const byteCharacters = atob(base64Data);
@@ -98,16 +107,20 @@ const SeenlyApp = () => {
         
         const blob = new Blob([new Uint8Array(byteArrays)], { type: 'image/jpeg' });
 
-        // Create unique filename
-        const fileName = `${moodTag}_${Date.now()}.jpg`;
+        // Create unique filename with user ID
+        const fileName = `${user.id}/${moodTag}_${Date.now()}.jpg`;
         
-        // Upload blob to Supabase
+        // Upload blob to Supabase with user metadata
         const { data, error: uploadError } = await supabase.storage
           .from('ibasho')
           .upload(fileName, blob, {
             contentType: 'image/jpeg',
             cacheControl: '3600',
-            upsert: false
+            upsert: false,
+            metadata: {
+              userId: user.id,
+              moodTag: moodTag
+            }
           });
 
         if (uploadError) {
@@ -132,7 +145,6 @@ const SeenlyApp = () => {
       }
     }
 
-
     const newEntry = {
       id: Date.now(),
       photo: imageUrl,
@@ -147,6 +159,7 @@ const SeenlyApp = () => {
         caption: newEntry.caption,
         mood: newEntry.mood,
         mood_score: 8,
+        rotation: newEntry.rotation,
         // user_id: user.id,
         images: newEntry.photo,
       })

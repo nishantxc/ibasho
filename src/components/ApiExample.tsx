@@ -18,6 +18,8 @@ interface JournalEntry {
   mood: string
   mood_score: number
   created_at: string
+  rotation: number
+  images: string
 }
 
 interface User {
@@ -103,6 +105,7 @@ export default function ApiExample() {
         caption: 'Today I learned about REST APIs with Supabase!',
         mood: 'excited',
         mood_score: 8,
+        
         user_id: user.id
       })
       setJournalEntries(prev => [newEntry.entry, ...prev])

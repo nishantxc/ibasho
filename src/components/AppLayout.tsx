@@ -19,7 +19,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50">
       <Provider store={store}>
-        <div className="container mx-auto px-4 py-8 md:flex gap-8">
+        <div>
           {children}
         </div>
       </Provider>
@@ -27,4 +27,4 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   );
 };
 
-export default AppLayout; 
+export default AppLayout;

@@ -4,6 +4,7 @@ import { Share, Share2, X } from "lucide-react";
 import { Console } from "console";
 import { useDispatch } from 'react-redux';
 import { addSharedPost } from '@/store/slices/journalEntrySlice';
+import { api } from "@/utils/api";
 
 type PolaroidModalProps = {
     isModalOpen: boolean;
@@ -15,15 +16,29 @@ const PolaroidModal: React.FC<PolaroidModalProps> = ({ isModalOpen, setIsModalOp
     const dispatch = useDispatch();
     if (!isModalOpen || !entry) return null;
 
-    const handleShare = () => {
+    const handleShare = async() => {
         dispatch(addSharedPost({
             id: entry.id,
             caption: entry.caption,
             mood: entry.mood,
             reactions: 0,
-            photo: entry.photo,
+            photo: entry.images,
             timestamp: entry.timestamp,
         }));
+
+
+        try{
+            const response = await api.posts.createPost({
+                username: entry.username,
+                avatar_url: entry.avatar_url,
+                photo: entry.images,
+                mood: entry.mood,
+                visibility: 'public',
+            });
+            console.log("Post shared successfully:", response);
+        } catch (error) {
+            console.error("Error sharing post:", error);
+        }
         setIsModalOpen(false);
     };
 
