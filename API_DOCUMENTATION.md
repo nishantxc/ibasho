@@ -24,7 +24,6 @@ Make sure to set these environment variables in your `.env.local` file:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
 ```
 

@@ -2,7 +2,8 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import type { RootState } from '../../store/store'
 import { User } from '../../types/types'
 
-const initialState: User = { id: '', username: '', mood: '', avatar: '', bio: '' };
+
+const initialState: User = { id: '', username: '', mood: '', avatar: '', bio: '', user_id: '' };
 
 export const userProfileSlice = createSlice({
   name: 'userProfile',

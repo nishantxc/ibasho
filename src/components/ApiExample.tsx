@@ -56,7 +56,9 @@ export default function ApiExample() {
     try {
       setLoading(true)
       setError(null)
-      const response = await api.messages.getMessages({ limit: 10 })
+      // Demo: provide a dummy chat_id or build from current user to satisfy new API
+      const chat_id = 'demo_chat_id'
+      const response = await api.messages.getMessages({ chat_id, limit: 10 })
       setMessages(response.messages)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch messages')
@@ -72,7 +74,7 @@ export default function ApiExample() {
       setError(null)
       const newMessage = await api.messages.createMessage({
         content: 'Hello from the API example!',
-        mood: '#tender'
+        chat_id: 'demo_chat_id'
       })
       setMessages(prev => [newMessage.message, ...prev])
     } catch (err) {

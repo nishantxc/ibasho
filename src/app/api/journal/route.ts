@@ -1,38 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseWithUser } from '@/utils/userFromSb'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://uvsqpmaejmaelmgtyjax.supabase.co'
-// Use service role key for server-side operations
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
-
-// Helper function to get user from token
-async function getUserFromToken(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader) {
-    throw new Error('No authorization header')
-  }
-
-  const token = authHeader.replace('Bearer ', '')
-  const { data: { user }, error } = await supabase.auth.getUser(token)
+// async function getSupabaseWithUser(request: NextRequest) {
+//   const authHeader = request.headers.get('authorization')
   
-  if (error || !user) {
-    throw new Error('Invalid token')
-  }
+//   if (!authHeader) {
+//     throw new Error('No authorization header')
+//   }
+//   const token = authHeader.replace('Bearer ', '')
+//   const supabase = createClient(supabaseUrl, supabaseKey)
+//   const { data: { user }, error } = await supabase.auth.getUser(token)
 
-  return user
-}
+//   if (error || !user) {
+//     throw new Error('Invalid token: ' + (error?.message || 'No user found'))
+//   }
+//   const supabaseWithAuth = createClient(supabaseUrl, supabaseKey, {
+//     global: {
+//       headers: {
+//         Authorization: `Bearer ${token}`
+//       }
+//     }
+//   })
+  
+//   return { user, supabase: supabaseWithAuth }
+// }
 
 // GET /api/journal - Get journal entries
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUserFromToken(request)
+    const { user , supabase} = await getSupabaseWithUser(request)
     const { searchParams } = new URL(request.url)
     
     const date = searchParams.get('date')
@@ -74,7 +70,7 @@ export async function GET(request: NextRequest) {
 // POST /api/journal - Create a new journal entry
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromToken(request)
+    const { user , supabase} = await getSupabaseWithUser(request)
     const { caption, mood, mood_score, images, rotation } = await request.json()
 
     if (!caption) {
@@ -112,7 +108,7 @@ export async function POST(request: NextRequest) {
 // PUT /api/journal - Update a journal entry
 export async function PUT(request: NextRequest) {
   try {
-    const user = await getUserFromToken(request)
+    const { user , supabase} = await getSupabaseWithUser(request)
     const { id, caption, mood, mood_score, images } = await request.json()
 
     if (!id) {
@@ -166,7 +162,7 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/journal - Delete a journal entry
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await getUserFromToken(request)
+    const { user , supabase} = await getSupabaseWithUser(request)
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 

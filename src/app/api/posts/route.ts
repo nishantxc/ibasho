@@ -1,39 +1,12 @@
+import { getSupabaseWithUser } from '@/utils/userFromSb';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://uvsqpmaejmaelmgtyjax.supabase.co'
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
-
-// Helper function to get user from token
-async function getUserFromToken(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader) {
-    throw new Error('No authorization header')
-  }
-
-  const token = authHeader.replace('Bearer ', '')
-  const { data: { user }, error } = await supabase.auth.getUser(token)
-  
-  if (error || !user) {
-    throw new Error('Invalid token')
-  }
-
-  return user
-}
 
 // Types based on database schema
 type PostVisibility = 'public' | 'private' | 'friends-only' | 'scheduled';
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getUserFromToken(req);
+    const { user, supabase } = await getSupabaseWithUser(req);
     const { username, photo, avatar_url, mood, caption, visibility = 'private' } = await req.json();
 
     if (!photo) {
@@ -89,24 +62,26 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    const { user, supabase } = await getSupabaseWithUser(req);
+
     const { searchParams } = new URL(req.url);
     const visibility = searchParams.get('visibility');
     const userId = searchParams.get('userId');
     
-    let user;
-    try {
-      user = await getUserFromToken(req);
-    } catch {
-      // If no valid token, only show public posts
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('visibility', 'public')
-        .order('created_at', { ascending: false });
+    // try {
+    //   const token = supabase.auth.getSession()
+    //   console.log('Token:', token);
+    // } catch {
+    //   // If no valid token, only show public posts
+    //   const { data, error } = await supabase
+    //     .from('posts')
+    //     .select('*')
+    //     .eq('visibility', 'public')
+    //     .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return NextResponse.json({ posts: data });
-    }
+    //   if (error) throw error;
+    //   return NextResponse.json({ posts: data });
+    // }
     
     let query = supabase
       .from('posts')
@@ -134,7 +109,7 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const user = await getUserFromToken(req);
+    const { user, supabase } = await getSupabaseWithUser(req);
     const { id, visibility, caption, photo, mood } = await req.json();
 
     if (!id) {
@@ -176,7 +151,7 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const user = await getUserFromToken(req);
+    const { user, supabase } = await getSupabaseWithUser(req);
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 

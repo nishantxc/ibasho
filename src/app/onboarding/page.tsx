@@ -8,7 +8,8 @@ import { supabase } from "../../../supabase/Supabase";
 import { api } from "@/utils/api";
 import { useRouter } from "next/navigation";
 import { adduserProfile } from "@/store/slices/userSlice";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 
 // --- AVATAR OPTIONS (add your own images/SVGs in public/) ---
@@ -42,6 +43,8 @@ export default function OnboardingPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  const user = useSelector((state: RootState) => state.userProfile);
+
   const router = useRouter();
   const dispatch = useDispatch();
 
@@ -49,9 +52,11 @@ export default function OnboardingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
+    
     try {
+      console.log("triggered")
       const response = await api.users.createUser({
+        user_id: user.id,
         username: username,
         bio: "",
         avatar: avatar,

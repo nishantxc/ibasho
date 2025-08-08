@@ -32,6 +32,7 @@ export type User = {
     mood?: string;
     avatar?: string;
     bio?: string;
+    user_id: string;
 }
 
 

@@ -7,23 +7,23 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
 // Helper function to get auth token from Supabase
 const getAuthToken = async () => {
   if (typeof window !== 'undefined') {
-    // Try to get token from localStorage first
-    const storedToken = localStorage.getItem('supabase.auth.token')
-    if (storedToken) {
-      try {
-        const parsed = JSON.parse(storedToken)
-        return parsed.currentSession?.access_token || parsed.access_token
-      } catch (e) {
-        // If parsing fails, try to get from Supabase client
-        const { supabase } = await import('../../supabase/Supabase')
-        const { data: { session } } = await supabase.auth.getSession()
-        return session?.access_token
-      }
-    } else {
-      // If no stored token, try to get from Supabase client
+    try {
+      // Import Supabase client and get current session
       const { supabase } = await import('../../supabase/Supabase')
-      const { data: { session } } = await supabase.auth.getSession()
-      return session?.access_token
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      console.log('Current session:', session);
+      console.log('Session error:', error);
+      
+      if (error) {
+        console.error('Error getting session:', error);
+        return null;
+      }
+      
+      return session?.access_token || null;
+    } catch (error) {
+      console.error('Error importing Supabase or getting session:', error);
+      return null;
     }
   }
   return null
@@ -37,10 +37,17 @@ const apiRequest = async (
   const token = await getAuthToken()
   const url = `${API_BASE_URL}${endpoint}`
 
+  console.log('Request URL:', url);
+  console.log('Authorization Token:', token ? 'Present' : 'Missing');
+  
+  if (!token) {
+    throw new Error('No authentication token available. Please log in.');
+  }
+
   const config: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
+      'Authorization': `Bearer ${token}`,
       ...options.headers,
     },
     ...options,
@@ -48,11 +55,24 @@ const apiRequest = async (
 
   try {
     const response = await fetch(url, config)
-    const data = await response.json()
+    
+    // Log response details for debugging
+    console.log('Response status:', response.status);
+    console.log('Response ok:', response.ok);
+    
+    let data;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = { message: await response.text() };
+    }
+
+    console.log('Response data:', data);
 
     if (!response.ok) {
       console.error('API error response:', data)
-      throw new Error(data.details || data.error || 'API request failed')
+      throw new Error(data.details || data.error || `API request failed with status ${response.status}`)
     }
 
     return data
@@ -87,47 +107,33 @@ export const authAPI = {
 
 // Messages API calls
 export const messagesAPI = {
-  getMessages: async (params?: {
-    sender_id?: string
-    receiver_id?: string
+  getMessages: async (params: {
+    chat_id: string
     limit?: number
     offset?: number
   }) => {
     const searchParams = new URLSearchParams()
-    if (params?.sender_id) searchParams.append('sender_id', params.sender_id)
-    if (params?.receiver_id) searchParams.append('receiver_id', params.receiver_id)
+    searchParams.append('chat_id', params.chat_id)
     if (params?.limit) searchParams.append('limit', params.limit.toString())
     if (params?.offset) searchParams.append('offset', params.offset.toString())
 
     const queryString = searchParams.toString()
     const endpoint = `/api/messages${queryString ? `?${queryString}` : ''}`
     
-    return apiRequest(endpoint, { method: 'GET' })
+    return apiRequest(endpoint, { method: 'GET' }) as Promise<{ messages: any[] }>
   },
 
-  createMessage: async (data: {
-    content: string
-    receiver_id?: string
-    mood?: string
-    post_reference?: any
-  }) => {
+  createMessage: async (data: { content: string; chat_id: string }) => {
     return apiRequest('/api/messages', {
       method: 'POST',
       body: JSON.stringify(data),
-    })
-  },
-
-  updateMessage: async (id: string, data: { likes?: number }) => {
-    return apiRequest('/api/messages', {
-      method: 'PUT',
-      body: JSON.stringify({ id, ...data }),
-    })
+    }) as Promise<{ message: any }>
   },
 
   deleteMessage: async (id: string) => {
     return apiRequest(`/api/messages?id=${id}`, {
       method: 'DELETE',
-    })
+    }) as Promise<{ message: string }>
   },
 }
 
@@ -139,10 +145,10 @@ export const usersAPI = {
   },
 
   createUser: async (data: {
+    user_id: string
     username: string
     bio?: string
     avatar?: string
-    // preferences?: any
   }) => {
     return apiRequest('/api/users', {
       method: 'POST',
@@ -154,7 +160,6 @@ export const usersAPI = {
     username?: string
     bio?: string
     avatar?: string
-    // preferences?: any
   }) => {
     return apiRequest('/api/users', {
       method: 'PUT',
@@ -229,7 +234,6 @@ export const postsAPI = {
     if (params?.userId) searchParams.append('userId', params.userId)
     if (params?.limit) searchParams.append('limit', params.limit.toString())
 
-
     const queryString = searchParams.toString()
     const endpoint = `/api/posts${queryString ? `?${queryString}` : ''}`
     
@@ -269,11 +273,56 @@ export const postsAPI = {
   },
 }
 
-// Export all APIs
+export const chatParticipantsAPI = {
+  getChatParticipants: async (params?: {
+    chat_id?: string
+    user_id?: string
+    request_status?: string
+    limit?: number
+    offset?: number
+  }) => {
+    const searchParams = new URLSearchParams()
+    if (params?.chat_id) searchParams.append('chat_id', params.chat_id)
+    if (params?.user_id) searchParams.append('user_id', params.user_id)
+    if (params?.request_status) searchParams.append('request_status', params.request_status)
+    if (params?.limit) searchParams.append('limit', params.limit.toString())
+    if (params?.offset) searchParams.append('offset', params.offset.toString())
+    const queryString = searchParams.toString()
+  
+    const endpoint = `/api/chat_participants${queryString ? `?${queryString}` : ''}`
+    return apiRequest(endpoint, { method: 'GET' }) as Promise<{ chat_participants: any[] }>
+  },
+
+  createChatParticipant: async (data: {
+    username: string
+    avatar?: string
+    chat_id: string
+    user_id: string
+    sender_id: string
+    request_status?: 'pending' | 'accepted' | 'declined'
+  }) => {
+    return apiRequest('/api/chat_participants', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }) as Promise<{ chat_participant: any }>
+  },
+
+  updateChatParticipantStatus: async (data: {
+    chat_id: string
+    request_status: 'pending' | 'accepted' | 'declined'
+  }) => {
+    return apiRequest('/api/chat_participants', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }) as Promise<{ chat_participant: any }>
+  },
+}
+
 export const api = {
   auth: authAPI,
   messages: messagesAPI,
   users: usersAPI,
   journal: journalAPI,
   posts: postsAPI,
-} 
+  chatParticipants: chatParticipantsAPI,
+}

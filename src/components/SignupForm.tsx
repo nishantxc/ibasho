@@ -1,23 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, FormEvent, ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signUpWithEmail, signInWithGoogle } from '../../supabase/Supabase';
 import { useRouter } from 'next/navigation';
 
-const SignupForm = ({ onSignupSuccess }) => {
-  const [signupData, setSignupData] = useState({ email: '', password: '' });
-  const [isLoading, setIsLoading] = useState(false);
-  const [authError, setAuthError] = useState(null);
-  const [showValidation, setShowValidation] = useState(false);
-  const [kittenClicked, setKittenClicked] = useState(false);
+interface SignupFormProps {
+  onSignupSuccess?: () => void;
+}
+
+interface SignupData {
+  email: string;
+  password: string;
+}
+
+const SignupForm: React.FC<SignupFormProps> = ({ onSignupSuccess }) => {
+  const [signupData, setSignupData] = useState<SignupData>({ email: '', password: '' });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [showValidation, setShowValidation] = useState<boolean>(false);
+  const [kittenClicked, setKittenClicked] = useState<boolean>(false);
 
   const router = useRouter();
 
-  const handleKittenClick = () => {
+  const handleKittenClick = (): void => {
     setKittenClicked(true);
     setTimeout(() => setKittenClicked(false), 2000);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setIsLoading(true);
     setShowValidation(true);
@@ -33,15 +42,15 @@ const SignupForm = ({ onSignupSuccess }) => {
       if (onSignupSuccess) { 
         router.push('/onboarding'); 
         onSignupSuccess(); 
-      };
-    } catch (error) {
+      }
+    } catch (error: any) {
       setAuthError(error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = async (): Promise<void> => {
     setIsLoading(true);
     setAuthError(null);
     try {
@@ -50,10 +59,15 @@ const SignupForm = ({ onSignupSuccess }) => {
         setAuthError(error.message);
         setIsLoading(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       setAuthError(error.message);
       setIsLoading(false);
     }
+  };
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    const { name, value } = e.target;
+    setSignupData(prev => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -66,28 +80,6 @@ const SignupForm = ({ onSignupSuccess }) => {
         className="relative z-10 max-w-md w-full"
       >
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-pink-100">
-          {/* Floating kitten friend */}
-          {/* <motion.div
-            className="absolute -top-6 -right-6 cursor-pointer text-5xl"
-            animate={{ y: [0, -15, 0], rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-            onClick={handleKittenClick}
-            whileHover={{ scale: 1.3, rotate: 15 }}
-            whileTap={{ scale: 0.8 }}
-          >
-            🐱
-            {kittenClicked && (
-              <motion.div
-                className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-sm bg-yellow-200 px-3 py-1 rounded-full font-mono shadow-lg"
-                initial={{ opacity: 0, scale: 0, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0, y: -10 }}
-              >
-                You've got this! 🌟
-              </motion.div>
-            )}
-          </motion.div> */}
-
           {/* Header */}
           <motion.div
             className="text-center mb-8 pt-4"
@@ -111,8 +103,9 @@ const SignupForm = ({ onSignupSuccess }) => {
             <div className="relative">
               <input
                 type="email"
+                name="email"
                 value={signupData.email}
-                onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
+                onChange={handleInputChange}
                 className="text-gray-600 w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-300 font-mono"
                 placeholder="your.email@example.com"
                 required
@@ -125,12 +118,14 @@ const SignupForm = ({ onSignupSuccess }) => {
                 <span className="text-green-500">✓</span>
               </motion.div>
             </div>
+            
             {/* Password field */}
             <div className="relative">
               <input
                 type="password"
+                name="password"
                 value={signupData.password}
-                onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
+                onChange={handleInputChange}
                 className="text-gray-600 w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all duration-300 font-mono"
                 placeholder="Your secure password"
                 required
@@ -143,6 +138,7 @@ const SignupForm = ({ onSignupSuccess }) => {
                 <span className="text-green-500">✓</span>
               </motion.div>
             </div>
+
             {/* Error message */}
             <AnimatePresence>
               {authError && (
@@ -156,6 +152,7 @@ const SignupForm = ({ onSignupSuccess }) => {
                 </motion.div>
               )}
             </AnimatePresence>
+
             {/* Validation message */}
             <AnimatePresence>
               {showValidation && (
@@ -169,6 +166,7 @@ const SignupForm = ({ onSignupSuccess }) => {
                 </motion.div>
               )}
             </AnimatePresence>
+
             {/* Submit button */}
             <motion.button
               type="submit"
@@ -190,35 +188,20 @@ const SignupForm = ({ onSignupSuccess }) => {
                 'Begin your journey'
               )}
             </motion.button>
-            {/* Google Sign In Button */}
-            {/* <motion.button
+
+            {/* Login link */}
+            <motion.button
               type="button"
-              onClick={handleGoogleSignIn}
+              onClick={() => router.push('/login')}
               disabled={isLoading}
-              className="w-full py-4 bg-white border border-gray-300 text-gray-800 rounded-xl font-medium hover:bg-gray-50 transition-all duration-300 shadow-md flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2 bg-white text-gray-800 rounded-xl font-medium hover:bg-gray-50 transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               whileHover={{ scale: isLoading ? 1 : 1.02, y: isLoading ? 0 : -2 }}
               whileTap={{ scale: isLoading ? 1 : 0.98 }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
-                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
-                <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
-                <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
-                <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
-              </svg>
-              <span>Continue with Google</span>
-            </motion.button> */}
-                        <motion.button
-                          type="button"
-                          onClick={() => router.push('/signup')}
-                          disabled={isLoading}
-                          className="w-full py-2 bg-white text-gray-800 rounded-xl font-medium hover:bg-gray-50 transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                          whileHover={{ scale: isLoading ? 1 : 1.02, y: isLoading ? 0 : -2 }}
-                          whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                        >
-                          <span className="text-gray-500">Already have an account? <span className='text-blue-500'>Sign in
-                          </span></span>
-                        </motion.button>
+              <span className="text-gray-500">Already have an account? <span className='text-blue-500'>Sign in</span></span>
+            </motion.button>
           </motion.form>
+
           {/* Footer comfort text */}
           <motion.div
             className="text-center mt-8 text-xs text-gray-500 font-mono"

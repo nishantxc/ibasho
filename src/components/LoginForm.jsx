@@ -25,6 +25,7 @@ const LoginForm = ({ onLoginSuccess }) => {
     e.preventDefault();
     setIsLoading(true);
     setAuthError(null);
+    
     try {
       const result = await signInWithEmail(loginData.email, loginData.password);
       if (result.error) {
@@ -32,22 +33,34 @@ const LoginForm = ({ onLoginSuccess }) => {
         setIsLoading(false);
         return;
       }
-
+      
+      console.log('Login result:', result);
+      console.log('User ID:', result.data.user.id);
+      
       if (result.data?.user?.id) {
-        const response = await api.users.getUser(result.data.user.id);
-        console.log('API Response:', response);
-        if (response) {
-          console.log('Dispatching user profile:', response);
-          dispatch(adduserProfile(response));
-          router.push('/home');
-        } else {
-          console.log('No user profile found, redirecting to onboarding');
+        try {
+          // Get user profile from your users table
+          const response = await api.users.getUser();  // Don't pass ID, let API use token
+          console.log('User profile API response:', response);
+          
+          // Check if user has a profile (check for username or id, not just id)
+          if (response.user && (response.user.username || response.user.id)) {
+            console.log('User has profile, dispatching:', response.user);
+            dispatch(adduserProfile(response.user));
+            router.push('/home');
+          } else {
+            console.log('No user profile found, redirecting to onboarding');
+            console.log('Empty user object:', response.user);
+            router.push('/onboarding');
+          }
+        } catch (profileError) {
+          console.error('Error fetching user profile:', profileError);
+          // If there's an error getting the profile, assume they need onboarding
           router.push('/onboarding');
         }
       }
-
-      if (onLoginSuccess) onLoginSuccess();
     } catch (error) {
+      console.error('Login error:', error);
       setAuthError(error.message);
     } finally {
       setIsLoading(false);

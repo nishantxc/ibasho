@@ -471,7 +471,7 @@ const SeenlyApp = () => {
 
           <div className='flex gap-4 items-center justify-center'>
             <div className='flex text-gray-500 rounded-full border border-gray-500 px-4 py-2 font-mono text-lg font-light'>
-              hi, {userProfile && <p>{userProfile.user.username}</p>}
+              hi, {userProfile && <p>{userProfile?.username}</p>}
             </div>
             <motion.button
               className='text-gray-500 rounded-full border border-gray-500 px-3 py-3 font-mono text-lg font-bold'

@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addSharedPost } from '@/store/slices/journalEntrySlice';
 import { api } from "@/utils/api";
 import { RootState } from "@/store/store";
+import moment from "moment";
 
 type PolaroidModalProps = {
     isModalOpen: boolean;
@@ -16,6 +17,7 @@ type PolaroidModalProps = {
 const PolaroidModal: React.FC<PolaroidModalProps> = ({ isModalOpen, setIsModalOpen, entry }) => {
 
     const user = useSelector((state: RootState) => state.userProfile);
+    
     const dispatch = useDispatch();
 
     if (!isModalOpen || !entry) return null;
@@ -32,11 +34,10 @@ const PolaroidModal: React.FC<PolaroidModalProps> = ({ isModalOpen, setIsModalOp
         //     timestamp: entry.timestamp,
         // }));
 
-
         try {
             const response = await api.posts.createPost({
-                username: user.user.username,
-                avatar_url: user.user.avatar,
+                username: user.username,
+                avatar_url: user.avatar,
                 photo: entry.images,
                 mood: entry.mood,
                 visibility: 'public',
@@ -114,7 +115,7 @@ const PolaroidModal: React.FC<PolaroidModalProps> = ({ isModalOpen, setIsModalOp
                         <div className="flex justify-end mb-6">
                             <div className="w-16 h-16 rounded-full border-2 border-gray-400 flex items-center justify-center text-xs text-gray-600 font-mono bg-white/80">
                                 <div className="text-center">
-                                    <div>{new Date(entry.timestamp).toLocaleDateString('en-GB')}</div>
+                                    <div>{moment(entry.created_at).format('MMMM D, YYYY')}</div>
                                     <div className="text-[8px]">POSTMARK</div>
                                 </div>
                             </div>
