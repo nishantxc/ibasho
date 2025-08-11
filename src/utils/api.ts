@@ -11,15 +11,15 @@ const getAuthToken = async () => {
       // Import Supabase client and get current session
       const { supabase } = await import('../../supabase/Supabase')
       const { data: { session }, error } = await supabase.auth.getSession()
-      
+
       console.log('Current session:', session);
       console.log('Session error:', error);
-      
+
       if (error) {
         console.error('Error getting session:', error);
         return null;
       }
-      
+
       return session?.access_token || null;
     } catch (error) {
       console.error('Error importing Supabase or getting session:', error);
@@ -39,7 +39,7 @@ const apiRequest = async (
 
   console.log('Request URL:', url);
   console.log('Authorization Token:', token ? 'Present' : 'Missing');
-  
+
   if (!token) {
     throw new Error('No authentication token available. Please log in.');
   }
@@ -55,11 +55,11 @@ const apiRequest = async (
 
   try {
     const response = await fetch(url, config)
-    
+
     // Log response details for debugging
     console.log('Response status:', response.status);
     console.log('Response ok:', response.ok);
-    
+
     let data;
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
@@ -119,7 +119,7 @@ export const messagesAPI = {
 
     const queryString = searchParams.toString()
     const endpoint = `/api/messages${queryString ? `?${queryString}` : ''}`
-    
+
     return apiRequest(endpoint, { method: 'GET' }) as Promise<{ messages: any[] }>
   },
 
@@ -182,7 +182,7 @@ export const journalAPI = {
 
     const queryString = searchParams.toString()
     const endpoint = `/api/journal${queryString ? `?${queryString}` : ''}`
-    
+
     return apiRequest(endpoint, { method: 'GET' })
   },
 
@@ -236,7 +236,7 @@ export const postsAPI = {
 
     const queryString = searchParams.toString()
     const endpoint = `/api/posts${queryString ? `?${queryString}` : ''}`
-    
+
     return apiRequest(endpoint, { method: 'GET' }) as Promise<{ posts: Post[] }>
   },
 
@@ -288,7 +288,7 @@ export const chatParticipantsAPI = {
     if (params?.limit) searchParams.append('limit', params.limit.toString())
     if (params?.offset) searchParams.append('offset', params.offset.toString())
     const queryString = searchParams.toString()
-  
+
     const endpoint = `/api/chat_participants${queryString ? `?${queryString}` : ''}`
     return apiRequest(endpoint, { method: 'GET' }) as Promise<{ chat_participants: any[] }>
   },
@@ -300,6 +300,13 @@ export const chatParticipantsAPI = {
     user_id: string
     sender_id: string
     request_status?: 'pending' | 'accepted' | 'declined'
+    initial_post_reference: {
+      id: number;
+      caption: string;
+      photo: string;
+      mood: string;
+      owner_id: string;
+    };
   }) => {
     return apiRequest('/api/chat_participants', {
       method: 'POST',

@@ -1,11 +1,11 @@
 export type JournalEntry = {
-    caption:string,
-    id:number,
-    mood:string,
-    images:string,
-    rotation:number,
-    mood_score:number,
-    created_at:string,
+    caption: string,
+    id: number,
+    mood: string,
+    images: string,
+    rotation: number,
+    mood_score: number,
+    created_at: string,
 }
 
 export type Message = {
@@ -37,13 +37,23 @@ export type User = {
 
 
 export type Post = {
-  id: string;
-  created_at: string;
-  user_id: string;
-  username: string;
-  avatar_url?: string;
-  visibility: "private" | "public" | "friends-only" | "scheduled";
-  caption: string;
-  photo: string;
-  mood?: string;
+    id: string;
+    created_at: string;
+    user_id: string;
+    username: string;
+    avatar_url?: string;
+    visibility: "private" | "public" | "friends-only" | "scheduled";
+    caption: string;
+    photo: string;
+    mood?: string;
 }
+
+
+export type initialPostReference = {
+    id: number;
+    caption: string;
+    photo: string;
+    mood: string;
+    owner_id: string;
+    user_id: string;
+};

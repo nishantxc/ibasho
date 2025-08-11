@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const {user, supabase} = await getSupabaseWithUser(request)
-    const { chat_id, user_id, sender_id, username, avatar, request_status } = await request.json();
+    const { chat_id, user_id, sender_id, username, avatar, request_status, initial_post_reference } = await request.json();
 
     console.log(chat_id, user_id, sender_id, "asdasdasd");
     
@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
         username: username ?? null,
         avatar: avatar ?? null,
         request_status: inviterStatus,
+        initial_post_reference: initial_post_reference,
       })
       .select()
       .single();
@@ -150,7 +151,7 @@ export async function PUT(request: NextRequest) {
       .from('chat_participants')
       .select('*')
       .eq('chat_id', chat_id)
-      .single()
+      .maybeSingle()
 
     if (fetchError || !existing) {
       return NextResponse.json({ error: 'Invitation not found' }, { status: 404 })

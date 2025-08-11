@@ -67,15 +67,6 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
 
   const handleSendMessage = async (post: Post) => {
     try {
-      // Get current user ID
-      // const { data: { user: currentUser } } = await supabase.auth.getUser();
-      // if (!currentUser) return;
-  
-      // Ensure both users exist in the users table
-      // await ensureUserExists(currentUser.id);
-      // await ensureUserExists(post.user_id);
-  
-      // Create chat_id by concatenating user IDs (sorted to ensure consistency)
       const userIds = [user.user_id, post.user_id].sort();
       const chatId = `${userIds[0]}_${userIds[1]}`;
       
@@ -87,14 +78,8 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
         user_id: user.user_id, // requester
         sender_id: post.user_id, // recipient
         request_status: 'pending',
+        initial_post_reference: post,
       });
-  
-      // Create chat participant for post owner (recipient)
-      // await api.chatParticipants.createChatParticipant({
-      //   chat_id: chatId,
-      //   user_id: post.user_id,
-      //   sender_id: user.user_id
-      // });
   
       // Navigate to Whisper tab with the chat context
       if (onSendMessage) {
@@ -104,24 +89,7 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
       console.error('Error creating chat participant:', error);
     }
   };
-  
-  // Helper function to ensure user exists in users table
-  const ensureUserExists = async (userId: string) => {
-    try {
-      const { data: existingUser } = await api.users.getUser(userId);
-      if (!existingUser.user || !existingUser.user.user_id) {
-        // Create user profile if it doesn't exist
-        await api.users.createUser({
-          user_id: userId,
-          username: `user_${userId.substring(0, 8)}`,
-          bio: '',
-          avatar: ''
-        });
-      }
-    } catch (error) {
-      console.error('Error ensuring user exists:', error);
-    }
-  };
+
 
   useEffect(() => {
     console.log("Checking if we need to fetch posts");

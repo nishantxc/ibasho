@@ -5,15 +5,10 @@ import { supabase } from '../../supabase/Supabase';
 import { api } from '@/utils/api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import { initialPostReference } from '@/types/types';
 
 interface WhisperPageProps {
-  initialPostReference?: {
-    id: number;
-    caption: string;
-    photo: string;
-    mood: string;
-    owner_id: string;
-  };
+  initialPostReference?: initialPostReference;
   onBackToCommunity?: () => void;
 }
 
@@ -27,9 +22,9 @@ type ChatMessage = {
   is_own_message?: boolean;
 };
 
-const WhisperPage: React.FC<WhisperPageProps> = ({ 
-  initialPostReference, 
-  onBackToCommunity 
+const WhisperPage: React.FC<WhisperPageProps> = ({
+  initialPostReference,
+  onBackToCommunity
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatParticipants, setChatParticipants] = useState<any[]>([]);
@@ -39,6 +34,9 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
   const [selectedChatId, setSelectedChatId] = useState<string>('');
 
   const user = useSelector((state: RootState) => state.userProfile);
+
+  console.log(initialPostReference, "initialpostred");
+
 
   // Remove moods/likes for simplified chat
 
@@ -76,13 +74,18 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
     if (!user) return;
 
     console.log(user, "fetchChatParticipants user");
-    
+
     try {
+
+      // const chat_id = user.user_id + "_" + initialPostReference?.user_id
+      console.log(initialPostReference?.user_id, "chat id ji keh e");
+
       const response = await api.chatParticipants.getChatParticipants();
+
       console.log(response, "response.chatParticipants");
       const list = response.chat_participants || [];
       console.log(list, "listtttttttt");
-      
+
       // current user id
       const currentId = user.user_id;
       const accepted = list.filter((p: any) => p.request_status === 'accepted');
@@ -181,7 +184,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
           <div key={invite.id} className="flex items-center justify-between px-4 py-2 rounded border">
             <div className="flex items-center gap-3">
               <div className='border border-black text-black rounded-full px-2'>
-                {(invite.requester?.username || 'U').substring(0, 1)}
+                {(invite.initial_post_reference?.username || 'U').substring(0, 1)}
               </div>
               <p className="text-sm text-black font-medium">{invite.requester?.username || 'Unknown'}</p>
             </div>
@@ -226,7 +229,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
           </div>
         ))}
       </div>
-      
+
       <h3 className="font-semibold text-gray-800 border border-gray-200 p-4 mb-2">Chats</h3>
       <div className="space-y-2">
         {chatParticipants.map((participant) => (
@@ -239,10 +242,11 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
             }}
           >
             <div className='border border-black text-black rounded-full px-2'>
-             {(participant.user_id === user.user_id ? participant.recipient?.username : participant.requester?.username || 'U').substring(0, 1)}
+              {(participant.user_id === user.user_id ? participant.initial_post_reference
+                ?.username : participant.username || 'U').substring(0, 1)}
             </div>
             <p className="text-sm text-black font-medium">
-              {participant.user_id === user.user_id ? (participant.recipient?.username || 'Unknown') : (participant.requester?.username || 'Unknown')}
+              {participant.user_id === user.user_id ? (participant.initial_post_reference?.username || 'Unknown') : (participant.username || 'Unknown')}
             </p>
             {/* <p className="text-xs text-gray-500">Chat ID: {participant.chat_id}</p> */}
           </motion.div>
@@ -316,7 +320,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
 
   //     setMessages(prev => [...prev, newMessageObj]);
   //     setNewMessage('');
-      
+
   //     // Clear post reference after sending
   //     if (initialPostReference && onBackToCommunity) {
   //       onBackToCommunity();
@@ -337,7 +341,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
     const date = new Date(timestamp);
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return 'now';
     if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
@@ -380,9 +384,9 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
             className="bg-white bg-opacity-80 backdrop-blur-sm border-b border-gray-200 p-4"
           >
             <div className="flex items-center space-x-3">
-              <img 
-                src={initialPostReference.photo} 
-                alt="Post reference" 
+              <img
+                src={initialPostReference.photo}
+                alt="Post reference"
                 className="w-12 h-12 object-cover rounded-lg"
               />
               <div className="flex-1">
@@ -424,7 +428,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                       <span className="text-sm font-medium text-gray-800">{message.username}</span>
                       <span className="text-xs text-gray-400">{new Date(message.created_at).toLocaleString()}</span>
                     </div>
-                    
+
                     <div className={`bg-white bg-opacity-70 backdrop-blur-sm rounded-2xl p-4 shadow-sm ${message.is_own_message ? 'bg-blue-100' : ''}`}>
                       <p className="text-gray-800 leading-relaxed">{message.content}</p>
                     </div>

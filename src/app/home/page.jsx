@@ -533,7 +533,7 @@ const SeenlyApp = () => {
           <WhisperPage
             initialPostReference={selectedPostForMessage}
             onBackToCommunity={() => {
-              setSelectedPostForMessage(null);
+              // setSelectedPostForMessage(null);
               setCurrentView('community');
             }}
           />
