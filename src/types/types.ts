@@ -41,7 +41,7 @@ export type Post = {
     created_at: string;
     user_id: string;
     username: string;
-    avatar_url?: string;
+    avatar: string;
     visibility: "private" | "public" | "friends-only" | "scheduled";
     caption: string;
     photo: string;

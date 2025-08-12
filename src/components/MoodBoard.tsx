@@ -2,11 +2,12 @@ import type { RootState } from '@/store/store';
 import { Post } from '@/types/types';
 import { api } from '@/utils/api';
 import { motion } from 'framer-motion';
-import { Eye, Loader, Send } from 'lucide-react';
+import { Eye, Loader, MessageCircle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { supabase } from '../../supabase/Supabase';
 import Image from 'next/image';
+import moment from 'moment';
 
 interface MoodBoardProps {
   onSendMessage?: (post: Post) => void;
@@ -92,6 +93,9 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
     )
   }
 
+  // Exclude the current user's own posts from the community feed
+  const postsToShow = sharedPosts.filter((post) => post.user_id !== user.user_id);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -112,76 +116,98 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sharedPosts.length === 0 ? (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {postsToShow.length === 0 ? (
           <div className="col-span-full text-center text-gray-400 font-mono">No shared moments yet.</div>
         ) : (
-          sharedPosts.map((post: Post, index: number) => (
+          postsToShow.map((post: Post, index: number) => (
             <motion.div
               key={post.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={`bg-gradient-to-br  rounded-lg p-2 shadow-lg border border-white/50`}
-            // whileHover={{ y: -5, scale: 1.02 }}
+              transition={{ delay: index * 0.06 }}
+              className="rounded-xl border border-gray-200/70 bg-white/70 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow"
             >
-              {/* ${getMoodGradient(post.mood)} */}
-              <div className="relative py-2">
-                <div className="relative w-full h-48">
+              {/* Header */}
+              <div className="flex items-center justify-between px-3 pt-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative h-8 w-8 overflow-hidden rounded-full bg-gray-200">
+                    {post.avatar ? (
+                      <Image src={post?.avatar} alt={post.username} fill className="object-cover" sizes="32px" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-[10px] text-gray-600 font-mono">
+                        {post.username?.slice(0, 2)?.toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-gray-800 font-medium">{post.username == user.username ? 'You' : post.username}</span>
+                    <span className="text-[11px] text-gray-500 font-mono">{moment(post.created_at).fromNow()}</span>
+                  </div>
+                </div>
+                {post.username == user.username && (
+                  <div className="flex items-center gap-1 text-[11px] text-gray-600 font-mono">
+                    <Eye size={12} />
+                    {post.visibility}
+                  </div>
+                )}
+              </div>
+
+              {/* Media */}
+              <div className="relative mt-2 px-2">
+                <div className="relative w-full h-64 overflow-hidden rounded-lg">
                   <Image
                     src={post.photo}
                     alt="Journal entry"
                     fill
-                    className="object-cover rounded-lg"
+                    className="object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     priority={false}
                   />
                 </div>
               </div>
-              <div className="mb-4">
-                <p className="text-gray-800 font-mono text-sm italic mb-3">
+
+              {/* Caption */}
+              <div className="px-4 pt-3">
+                <p className="text-gray-800 text-sm leading-relaxed">
                   {post.caption}
                 </p>
-                <div className="flex items-center justify-between">
-                  {/* <span className={`px-3 py-1 rounded-full text-xs font-mono `}>
-                    {post.mood}
-                  </span> */}
-                  <div className="flex items-center gap-2">
-                    <motion.button
-                      className="text-[12px] flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                    >
-                      you're not alone.
-                    </motion.button>
-                    <motion.button
-                      className="text-[12px] flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                    >
-                      looking forward!
-                    </motion.button>
-                    {!(post.username == user.username) &&
-                      <motion.button
-                        className="text-gray-500 hover:text-blue-500 transition-colors"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => handleSendMessage(post)}
-                      >
-                        <Send size={14} />
-                      </motion.button>
-                    }
-                  </div>
-                </div>
               </div>
-              <div className="flex items-center justify-between text-xs text-gray-500 font-mono">
-                <span>by {post.username == user.username ? "You" : post.username}</span>
-                {post.username == user.username && <motion.button
-                  className="flex items-center gap-1 hover:text-gray-700 transition-colors"
-                >
-                  <Eye size={12} />
-                  {post.visibility}
-                </motion.button>}
+
+              {/* Actions */}
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button className="px-2.5 py-1 rounded-full text-[11px] font-mono text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">
+                    you're not alone.
+                  </button>
+                  <button className="px-2.5 py-1 rounded-full text-[11px] font-mono text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">
+                    looking forward!
+                  </button>
+                  {post.mood && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono text-gray-700 bg-gray-100">
+                      {post.mood}
+                    </span>
+                  )}
+                </div>
+                {post.username !== user.username && (
+                  <motion.button
+                    className="inline-flex items-center gap-1.5 rounded-full border border-blue-300 bg-blue-50/80 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => handleSendMessage(post)}
+                  >
+                    <MessageCircle size={14} />
+                    Say hi
+                  </motion.button>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between px-4 pb-3 text-[11px] text-gray-500 font-mono">
+                <span>
+                  by {post.username == user.username ? 'You' : post.username}
+                </span>
+                {/* visibility already displayed for own posts in header */}
               </div>
             </motion.div>
           ))
