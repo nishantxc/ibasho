@@ -17,14 +17,14 @@ type PolaroidModalProps = {
 const PolaroidModal: React.FC<PolaroidModalProps> = ({ isModalOpen, setIsModalOpen, entry }) => {
 
     const user = useSelector((state: RootState) => state.userProfile);
-    
+
     const dispatch = useDispatch();
 
     if (!isModalOpen || !entry) return null;
 
     const handleShare = async () => {
         console.log("Sharing entry:", user);
-        
+
         // dispatch(addSharedPost({
         //     id: entry.id,
         //     caption: entry.caption,
@@ -51,29 +51,35 @@ const PolaroidModal: React.FC<PolaroidModalProps> = ({ isModalOpen, setIsModalOp
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 p-4 flex items-center justify-center z-50">
-            <div className="bg-white shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+        <div className="fixed inset-0 bg-black/50 p-3 sm:p-4 flex items-center justify-center z-50" role="dialog" aria-modal="true">
+            <div
+                className="bg-white shadow-2xl w-full max-w-[95vw] sm:max-w-2xl md:max-w-4xl max-h-[90vh] rounded-xl overflow-hidden"
                 style={{
                     background: 'linear-gradient(to bottom, #fefefe, #f8f6f1)',
                     filter: 'sepia(5%) saturate(105%)'
-                }}>
+                }}
+            >
 
                 {/* Postcard Header */}
-                <div className="flex justify-between items-start p-6 pb-2">
-                    <div className="flex flex-col">
-                        <h1 className="text-3xl font-serif text-gray-800 tracking-wider"
+                <div className="flex justify-between items-start p-4 sm:p-6 pb-2">
+                    <div className="flex flex-col min-w-0">
+                        <h1 className="text-2xl sm:text-3xl font-serif text-gray-800 tracking-wider"
                             style={{ fontFamily: 'Georgia, serif' }}>
                             JOURNAL ENTRY
                         </h1>
-                        <p className="text-sm text-gray-600 mt-1 font-mono">
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1 font-mono">
                             FROM YOUR JOURNEY
                         </p>
                     </div>
-                    <div className="flex gap-4 text-right">
-                        <div onClick={() => handleShare()} className="font-mono bg-orange-500 px-1 flex gap-1 items-center justfy-center cursor-pointer text-white hover:bg-white hover:text-orange-500 hover:border hover:border-orange-500">
-                            <p>share</p>
-                            <Share2 size={16} />
-                        </div>
+                    <div className="flex gap-3 sm:gap-4 text-right">
+                        <button
+                            onClick={() => handleShare()}
+                            className="font-mono hover:bg-orange-500 px-2 sm:px-3 py-1 flex gap-1 items-center justify-center cursor-pointer hover:text-white rounded-sm bg-white text-orange-500 border border-orange-500"
+                            aria-label="Share post"
+                        >
+                            <span className="text-xs sm:text-sm">share</span>
+                            <Share2 size={16} className=" sm:block" />
+                        </button>
                         <X
                             className="cursor-pointer text-gray-600 hover:text-gray-800 mt-1 ml-auto"
                             onClick={() => setIsModalOpen(false)}
@@ -82,14 +88,14 @@ const PolaroidModal: React.FC<PolaroidModalProps> = ({ isModalOpen, setIsModalOp
                     </div>
                 </div>
 
-                <div className="flex">
+                <div className="flex flex-col md:flex-row overflow-y-auto">
                     {/* Left side - Photo */}
-                    <div className="w-1/2 p-6 pt-0">
+                    <div className="w-full md:w-1/2 p-4 sm:p-6 pt-0">
                         <div className="relative overflow-hidden rounded-sm shadow-lg">
                             <img
                                 src={entry.images}
                                 alt="Journal entry"
-                                className="w-full h-96 object-cover"
+                                className="w-full h-64 sm:h-80 md:h-96 object-cover"
                                 style={{ filter: 'contrast(1.1) brightness(1.05)' }}
                             />
                             {/* Subtle vintage overlay */}
@@ -98,7 +104,7 @@ const PolaroidModal: React.FC<PolaroidModalProps> = ({ isModalOpen, setIsModalOp
                     </div>
 
                     {/* Right side - Postcard elements */}
-                    <div className="w-1/2 p-6 pt-0 flex flex-col">
+                    <div className="w-full md:w-1/2 p-4 sm:p-6 pt-0 flex flex-col">
                         {/* Stamps area */}
                         {/* <div className="flex justify-end mb-4">
                             <div className="flex gap-2">
@@ -110,19 +116,20 @@ const PolaroidModal: React.FC<PolaroidModalProps> = ({ isModalOpen, setIsModalOp
                                 </div>
                             </div>
                         </div> */}
+                        
 
                         {/* Postmark */}
-                        <div className="flex justify-end mb-6">
-                            <div className="w-16 h-16 rounded-full border-2 border-gray-400 flex items-center justify-center text-xs text-gray-600 font-mono bg-white/80">
+                        <div className="hidden md:flex justify-end mb-4 sm:mb-6">
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-gray-400 flex items-center justify-center text-[10px] sm:text-xs text-gray-600 font-mono bg-white/80">
                                 <div className="text-center">
                                     <div>{moment(entry.created_at).format('MMMM D, YYYY')}</div>
-                                    <div className="text-[8px]">POSTMARK</div>
+                                    <div className="text-[8px] sm:text-[10px]">POSTMARK</div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Address lines */}
-                        <div className="space-y-3 mb-6">
+                        <div className="space-y-3 mb-4 sm:mb-6">
                             <div className="flex items-center">
                                 {/* <span className="text-sm font-mono text-gray-700 w-16">To:</span> */}
                                 <div className="flex-1 border-b border-gray-300 h-4"></div>
@@ -138,23 +145,31 @@ const PolaroidModal: React.FC<PolaroidModalProps> = ({ isModalOpen, setIsModalOp
                         </div>
 
                         {/* Message area */}
-                        <div className="flex-1">
-                            <div className="border border-gray-300 rounded-sm p-4 bg-white/50 min-h-48">
+                        <div className="relative flex-1">
+                            <div className="border border-gray-300 rounded-sm p-3 sm:p-4 bg-white/50 min-h-48">
                                 <div className="space-y-2">
-                                    <p className="text-sm font-mono text-gray-600">
+                                    <p className="text-xs sm:text-sm font-mono text-gray-600">
                                         Mood: <span className="font-semibold text-gray-800">{entry.mood}</span>
                                     </p>
                                     <div className="border-b border-gray-200"></div>
-                                    <p className="text-sm font-serif text-gray-800 italic py-2">
+                                    <p className="text-sm sm:text-base font-serif text-gray-800 italic py-2">
                                         "{entry.caption}"
                                     </p>
+                                </div>
+                            </div>
+                            <div className="absolute md:hidden bottom-5 right-5 flex justify-end mb-4 sm:mb-6">
+                                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-gray-400 flex items-center justify-center text-[10px] sm:text-xs text-gray-600 font-mono bg-white/80">
+                                    <div className="text-center">
+                                        <div>{moment(entry.created_at).format('MMMM D, YYYY')}</div>
+                                        <div className="text-[8px] sm:text-[10px]">POSTMARK</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Bottom signature */}
-                        <div className="mt-4 text-right">
-                            <p className="text-xs text-gray-500 font-mono">
+                        <div className="mt-3 sm:mt-4 text-right">
+                            <p className="text-[10px] sm:text-xs text-gray-500 font-mono">
                                 With love from your journey ✨
                             </p>
                         </div>

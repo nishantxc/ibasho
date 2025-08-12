@@ -1,21 +1,43 @@
-import React from 'react';
-import { memo } from 'react';
-import { motion } from 'framer-motion';
+"use client"
 
-const CheckInForm = memo(({ 
-  caption, 
-  moodTag, 
+import React, { memo } from 'react'
+import { motion } from 'framer-motion'
+
+interface CheckInFormProps {
+  caption: string
+  moodTag: string
+  setMoodTag: (value: string) => void
+  setCaption: (value: string) => void
+  submitEntry: () => void | Promise<void>
+  photoData: string | null
+  error: string
+}
+
+const CheckInForm = memo<CheckInFormProps>(({ 
+  caption,
+  moodTag,
   setMoodTag,
-  setCaption, 
-  submitEntry, 
+  setCaption,
+  submitEntry,
   photoData,
-  error 
+  error,
 }) => {
-  const moodOptions = ['Grateful', 'Raw', 'Hopeful', 'Calm', 'Overwhelmed'];
+  const moodOptions = [
+    // Positive/pleasant
+    'Joyful', 'Grateful', 'Hopeful', 'Calm',
+    // Engaged/activated
+    'Focused', 'Curious',
+    // Internalizing/quiet distress
+    'Sad', 'Lonely', 'Anxious', 'Overwhelmed',
+    // Externalizing/activated distress
+    'Angry',
+    // Depleted/fatigue
+    'Tired',
+  ]
 
-  const handleCaptionChange = (e) => {
-    setCaption(e.target.value);
-  };
+  const handleCaptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setCaption(e.target.value)
+  }
 
   return (
     <motion.div 
@@ -45,7 +67,7 @@ const CheckInForm = memo(({
         <label className="block text-sm text-gray-500 font-mono mb-2">
           Select your mood:
         </label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-40 overflow-y-auto pr-1">
           {moodOptions.map((mood) => (
             <motion.button
               key={mood}
@@ -87,12 +109,14 @@ const CheckInForm = memo(({
         whileTap={photoData && caption && moodTag ? { scale: 0.98 } : {}}
         aria-label="Submit Entry"
       >
-        {photoData ? "Save This Moment" : "Capture a Photo First"}
+        {photoData ? 'Save This Moment' : 'Capture a Photo First'}
       </motion.button>
     </motion.div>
-  );
-});
+  )
+})
 
-CheckInForm.displayName = 'CheckInForm';
+CheckInForm.displayName = 'CheckInForm'
 
-export default CheckInForm;
+export default CheckInForm
+
+

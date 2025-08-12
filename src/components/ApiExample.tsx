@@ -74,7 +74,8 @@ export default function ApiExample() {
       setError(null)
       const newMessage = await api.messages.createMessage({
         content: 'Hello from the API example!',
-        chat_id: 'demo_chat_id'
+        chat_id: 'demo_chat_id',
+        username: 'anonymous'
       })
       setMessages(prev => [newMessage.message, ...prev])
     } catch (err) {

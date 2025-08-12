@@ -2,10 +2,11 @@ import type { RootState } from '@/store/store';
 import { Post } from '@/types/types';
 import { api } from '@/utils/api';
 import { motion } from 'framer-motion';
-import { Eye, Send } from 'lucide-react';
+import { Eye, Loader, Send } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { supabase } from '../../supabase/Supabase';
+import Image from 'next/image';
 
 interface MoodBoardProps {
   onSendMessage?: (post: Post) => void;
@@ -41,30 +42,6 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
     }
   };
 
-  const getMoodColor = (mood: string) => {
-    const colors: { [key: string]: string } = {
-      'Grateful': 'bg-green-100 text-green-800',
-      'Raw': 'bg-red-100 text-red-800',
-      'Hopeful': 'bg-blue-100 text-blue-800',
-      'Tender': 'bg-pink-100 text-pink-800',
-      'Overwhelmed': 'bg-purple-100 text-purple-800',
-      'Calm': 'bg-teal-100 text-teal-800'
-    };
-    return colors[mood] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getMoodGradient = (mood: string) => {
-    const gradients: { [key: string]: string } = {
-      'Grateful': 'from-green-50 to-emerald-50',
-      'Raw': 'from-red-50 to-pink-50',
-      'Hopeful': 'from-blue-50 to-cyan-50',
-      'Tender': 'from-pink-50 to-rose-50',
-      'Overwhelmed': 'from-purple-50 to-indigo-50',
-      'Calm': 'from-teal-50 to-blue-50'
-    };
-    return gradients[mood] || 'from-gray-50 to-slate-50';
-  };
-
   const handleSendMessage = async (post: Post) => {
     try {
       const userIds = [user.user_id, post.user_id].sort();
@@ -78,7 +55,13 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
         user_id: user.user_id, // requester
         sender_id: post.user_id, // recipient
         request_status: 'pending',
-        initial_post_reference: post,
+        initial_post_reference: {
+          id: String(post.id),
+          caption: post.caption,
+          photo: post.photo,
+          mood: post.mood || '',
+          user_id: post.user_id,
+        },
       });
   
       // Navigate to Whisper tab with the chat context
@@ -100,6 +83,14 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
   const handleRefresh = () => {
     fetchSharedPosts(true); // Force refresh
   };
+
+  if(isLoading){
+    return (
+      <div className='w-full h-[80vh] flex items-center justify-center bg-transparent'>
+        <Loader className="animate-spin text-4xl text-gray-500 mx-auto mt-20" />
+      </div>
+    )
+  }
 
   return (
     <motion.div
@@ -135,8 +126,17 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
             // whileHover={{ y: -5, scale: 1.02 }}
             >
               {/* ${getMoodGradient(post.mood)} */}
-              <div className="relative">
-                <img src={post.photo} alt="Journal entry" className="w-full h-48 object-cover rounded-lg py-2" />
+              <div className="relative py-2">
+                <div className="relative w-full h-48">
+                  <Image
+                    src={post.photo}
+                    alt="Journal entry"
+                    fill
+                    className="object-cover rounded-lg"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    priority={false}
+                  />
+                </div>
               </div>
               <div className="mb-4">
                 <p className="text-gray-800 font-mono text-sm italic mb-3">

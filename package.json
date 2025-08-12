@@ -20,6 +20,7 @@
     "next": "15.3.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-toastify": "^10.0.5",
     "react-redux": "^9.2.0",
     "redux-persist": "^6.0.0",
     "tailwind-animate": "^0.2.10",

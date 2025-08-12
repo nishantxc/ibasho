@@ -50,10 +50,9 @@ export type Post = {
 
 
 export type initialPostReference = {
-    id: number;
+    id: string;
     caption: string;
     photo: string;
     mood: string;
-    owner_id: string;
     user_id: string;
 };

@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { user, supabase } = await getSupabaseWithUser(request)
-    const { content, chat_id } = await request.json()
+    const { content, chat_id, username } = await request.json()
 
     if (!content || !chat_id) {
       return NextResponse.json({ error: 'content and chat_id are required' }, { status: 400 })
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       .from('messages')
       .insert({
         user_id: user.id,
-        username: user.user_metadata?.username || 'Anonymous',
+        username: username || 'Anonymous',
         content,
         chat_id,
       })

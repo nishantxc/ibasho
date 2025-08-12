@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Heart, Share2 } from 'lucide-react';
+import { ArrowLeft, Heart, Loader, Share2 } from 'lucide-react';
 import PolaroidModal from './PolaroidModal';
 import { JournalEntry } from '@/types/types';
 import Image from 'next/image';
@@ -48,14 +48,22 @@ const JournalTimeline: React.FC<JournalTimelineProps> = ({
     fetchJournalEntries();
   }, []);
 
+  if(loading){
+    return (
+      <div className='w-full h-[90vh] flex items-center justify-center bg-transparent'>
+        <Loader className="animate-spin text-4xl text-gray-500 mx-auto mt-20" />
+      </div>
+    )
+  }
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className=" w-full mb-8">
       <h3 className="z-10 text-2xl font-serif text-gray-800 mb-6 text-center">Your Space</h3>
 
-      <div className="min-h-[70vh] relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-8 border-8 border-white drop-shadow-md rounded-md">
+      <div className="min-h-[70vh] relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-8 border-8 border-gray-300 drop-shadow-md rounded-md">
         <div className="absolute inset-0 z-0 opacity-100 pointer-events-none ">
           <Image
-            src="/japan.jpg"
+            src="/billi.jpg"
             alt="Moodboard"
             fill
             style={{ objectFit: "cover" }}
@@ -81,7 +89,16 @@ const JournalTimeline: React.FC<JournalTimelineProps> = ({
               onClick={() => handleEntryClick(entry)}
             >
               <div className="relative p-2 overflow-visible">
-                <img src={entry.images} alt="Journal entry" className="w-full h-48 object-cover" />
+                <div className="relative w-full h-48">
+                  <Image
+                    src={entry.images}
+                    alt="Journal entry"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    priority={false}
+                  />
+                </div>
                 <div className="absolute -top-4 left-4 w-6 h-8 bg-gradient-to-br from-yellow-200 to-yellow-400 opacity-80 transform rotate-12 pointer-events-none"></div>
                 <div className="absolute -top-4 right-4 w-6 h-8 bg-gradient-to-br from-yellow-200 to-yellow-400 opacity-80 transform -rotate-12 pointer-events-none"></div>
               </div>

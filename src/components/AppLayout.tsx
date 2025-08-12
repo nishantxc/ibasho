@@ -10,6 +10,8 @@ import { getCurrentUser, signOut } from '../../supabase/Supabase';
 import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { PersistGate } from 'redux-persist/integration/react';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -23,6 +25,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <PersistGate loading={null} persistor={persistor}>
           <div>
             {children}
+            <ToastContainer position="bottom-center" hideProgressBar newestOnTop closeOnClick draggable pauseOnHover={false} />
           </div>
         </PersistGate>
       </Provider>

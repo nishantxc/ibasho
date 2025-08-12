@@ -123,7 +123,7 @@ export const messagesAPI = {
     return apiRequest(endpoint, { method: 'GET' }) as Promise<{ messages: any[] }>
   },
 
-  createMessage: async (data: { content: string; chat_id: string }) => {
+  createMessage: async (data: { content: string; chat_id: string, username:string }) => {
     return apiRequest('/api/messages', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -301,11 +301,11 @@ export const chatParticipantsAPI = {
     sender_id: string
     request_status?: 'pending' | 'accepted' | 'declined'
     initial_post_reference: {
-      id: number;
+      id: string;
       caption: string;
       photo: string;
       mood: string;
-      owner_id: string;
+      user_id: string;
     };
   }) => {
     return apiRequest('/api/chat_participants', {

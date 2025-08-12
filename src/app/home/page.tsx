@@ -1,124 +1,151 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Book, House, Loader, LogOut, MessageCircle, MessageCircleHeart, Star } from 'lucide-react';
-import WhisperPage from "@/components/Whisper"
-import CheckInForm from "@/components/CheckInForm"
-import Navigation from "@/components/Navigation"
-import DailyPrompt from "@/components/DailyPrompt"
-import PhotoCapture from "@/components/PhotoCapture"
-import JournalTimeline from "@/components/JournalTimeline"
-import MoodBoard from "@/components/MoodBoard"
-import AppLayout from "@/components/AppLayout"
-import { div } from 'framer-motion/client';
+import CheckInForm from "@/components/CheckInForm";
+import DailyPrompt from "@/components/DailyPrompt";
+import JournalTimeline from "@/components/JournalTimeline";
+import MoodBoard from "@/components/MoodBoard";
+import Navigation from "@/components/Navigation";
+import PhotoCapture from "@/components/PhotoCapture";
+import WhisperPage from "@/components/Whisper";
 import { api } from '@/utils/api';
+import { motion } from 'framer-motion';
+import { Loader, LogOut, Menu, X } from 'lucide-react';
+import Modal from '@/components/ui/Modal';
 import { useRouter } from 'next/navigation';
-import { signOut } from '../../../supabase/Supabase';
-import { supabase } from '../../../supabase/Supabase';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { signOut, supabase } from '../../../supabase/Supabase';
+import type { RootState } from '@/store/store';
+import type { initialPostReference } from '@/types/types';
+import { toast } from 'react-toastify';
 
-const SeenlyApp = () => {
-  const [currentView, setCurrentView] = useState('home');
-  const [photoData, setPhotoData] = useState(null);
-  const [caption, setCaption] = useState('');
-  const [moodTag, setMoodTag] = useState('');
-  const [journalEntries, setJournalEntries] = useState([]);
-  const [sharedPosts, setSharedPosts] = useState([
+type View = 'home' | 'journal' | 'community' | 'whisper';
+
+const SeenlyApp: React.FC = () => {
+  const [currentView, setCurrentView] = useState<View>('home');
+  const [photoData, setPhotoData] = useState<string | null>(null);
+  const [caption, setCaption] = useState<string>('');
+  const [moodTag, setMoodTag] = useState<string>('');
+  const [journalEntries, setJournalEntries] = useState<any[]>([]);
+  const [sharedPosts, setSharedPosts] = useState<any[]>([
     { id: 1, caption: "Found peace in my morning coffee", mood: "Grateful", reactions: 12 },
     { id: 2, caption: "Struggling but still here", mood: "Raw", reactions: 8 },
     { id: 3, caption: "Small wins today", mood: "Hopeful", reactions: 15 },
   ]);
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const [cameraLoading, setCameraLoading] = useState(false);
-  const [catMode, setCatMode] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  // const [user, setUser] = useState(null);
-  const [selectedPostForMessage, setSelectedPostForMessage] = useState(null);
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const [cameraOpen, setCameraOpen] = useState<boolean>(false);
+  const [cameraLoading, setCameraLoading] = useState<boolean>(false);
+  const [catMode, setCatMode] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [logoutOpen, setLogoutOpen] = useState<boolean>(false);
+  const [navOpen, setNavOpen] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [selectedPostForMessage, setSelectedPostForMessage] = useState<initialPostReference | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const router = useRouter();
-  const userProfile = useSelector((state) => state.userProfile);
-
-  console.log("userProfile:", userProfile);
+  const userProfile = useSelector((state: RootState) => state.userProfile);
 
   // Konami code for cat mode
   const konamiCode = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65];
-  const [konamiIndex, setKonamiIndex] = useState(0);
+  const [konamiIndex, setKonamiIndex] = useState<number>(0);
 
   const handleGoogleLogout = async () => {
     try {
       setLoading(true);
-      setError(null);
+      setError('');
       const response = await signOut();
       if (response) {
         router.push('/login');
       }
-    } catch (err) {
+    } catch (err: any) {
       setError(err instanceof Error ? err.message : 'Failed to logout');
     } finally {
       setLoading(false);
     }
   };
 
-  // const fetchUser = async () => {
-  //   try {
-  //     const response = await api.users.getUser();
-  //     setUser(response || null);
-  //     console.log('User:', response);
-  //   } catch (error) {
-  //     console.error('Failed to fetch user:', error);
-  //     setError('Failed to fetch user');
-  //   }
-  // };
+  const compressImage = async (dataUrl: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDimension = 1280; // cap largest side
+        const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+        const targetWidth = Math.round(img.width * scale);
+        const targetHeight = Math.round(img.height * scale);
 
-  // Fix: Memoize the caption handler to prevent re-renders
-  const handleCaption = (e) => {
-    setCaption(e.target.value);
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas not supported'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        try {
+          // Prefer WebP when available, fallback to JPEG
+          const tryWebP = canvas.toDataURL('image/webp', 0.82);
+          if (tryWebP.startsWith('data:image/webp')) {
+            resolve(tryWebP);
+            return;
+          }
+          const jpeg = canvas.toDataURL('image/jpeg', 0.82);
+          resolve(jpeg);
+        } catch (e) {
+          reject(e);
+        }
+      };
+      img.onerror = reject;
+      img.src = dataUrl;
+    });
   };
 
-  // Fix: Memoize the submit handler
   const submitEntry = useCallback(async () => {
     setLoading(true)
     if (!photoData || !caption || !moodTag) {
-      setError('Please capture a photo, add a caption, and select a mood.');
+      const msg = 'Please capture a photo, add a caption, and select a mood.';
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
-
-    let imageUrl = null;
+    let imageUrl: string | null = null;
     if (photoData) {
       try {
         // Get current user session
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
-          setError('Please login to upload images');
+          const msg = 'Please login to upload images';
+          setError(msg);
+          toast.error(msg);
           setLoading(false);
           return;
         }
 
-        // Convert base64 to blob
-        const base64Data = photoData.split(',')[1];
+        // Compress image and convert base64 to blob
+        const compressedDataUrl = await compressImage(photoData);
+        const [prefix, base64Data] = (compressedDataUrl || photoData).split(',');
+        const mimeMatch = prefix?.match(/^data:(.*);base64$/);
+        const mimeType = mimeMatch?.[1] || 'image/jpeg';
         const byteCharacters = atob(base64Data);
-        const byteArrays = [];
+        const byteArrays: number[] = [];
 
         for (let i = 0; i < byteCharacters.length; i++) {
           byteArrays.push(byteCharacters.charCodeAt(i));
         }
+        const blob = new Blob([new Uint8Array(byteArrays)], { type: mimeType });
 
-        const blob = new Blob([new Uint8Array(byteArrays)], { type: 'image/jpeg' });
-
-        // Create unique filename with user ID
-        const fileName = `${user.id}/${moodTag}_${Date.now()}.jpg`;
+        // Create unique filename with user ID and extension based on mime
+        const ext = mimeType === 'image/webp' ? 'webp' : 'jpg';
+        const fileName = `${user.id}/${moodTag}_${Date.now()}.${ext}`;
 
         // Upload blob to Supabase with user metadata
         const { data, error: uploadError } = await supabase.storage
           .from('ibasho')
           .upload(fileName, blob, {
-            contentType: 'image/jpeg',
+            contentType: mimeType,
             cacheControl: '3600',
             upsert: false,
             metadata: {
@@ -129,7 +156,9 @@ const SeenlyApp = () => {
 
         if (uploadError) {
           console.error("Image upload error:", uploadError);
-          setError(`Failed to upload image: ${uploadError.message}`);
+          const msg = `Failed to upload image: ${uploadError.message}`;
+          setError(msg);
+          toast.error(msg);
           setLoading(false);
           return;
         }
@@ -144,6 +173,7 @@ const SeenlyApp = () => {
       } catch (err) {
         console.error("Image processing error:", err);
         setError("Failed to process image for upload");
+        toast.error('Failed to process image for upload');
         setLoading(false);
         return;
       }
@@ -164,13 +194,13 @@ const SeenlyApp = () => {
         mood: newEntry.mood,
         mood_score: 8,
         rotation: newEntry.rotation,
-        // user_id: user.id,
         images: newEntry.photo,
       })
       console.log('Journal entry created:', response);
-      // setJournalEntries(prev => [newEntry.entry, ...prev])
+      toast.success('Saved to your journal');
     } catch (err) {
       console.log('Error creating journal entry:', err);
+      toast.error('Failed to save journal entry');
     }
 
     setJournalEntries(prev => [...prev, newEntry]);
@@ -183,7 +213,7 @@ const SeenlyApp = () => {
   }, [photoData, caption, moodTag]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.keyCode === konamiCode[konamiIndex]) {
         setKonamiIndex((prev) => prev + 1);
         if (konamiIndex + 1 === konamiCode.length) {
@@ -201,8 +231,9 @@ const SeenlyApp = () => {
 
   useEffect(() => {
     return () => {
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject;
+      const v = videoRef.current as HTMLVideoElement | null;
+      if (v?.srcObject) {
+        const stream = v.srcObject as MediaStream;
         stream.getTracks().forEach((track) => track.stop());
       }
     };
@@ -219,7 +250,7 @@ const SeenlyApp = () => {
     setError('');
 
     try {
-      const constraints = {
+      const constraints: MediaStreamConstraints = {
         video: {
           facingMode: 'environment',
           width: { ideal: 640, max: 1280 },
@@ -228,19 +259,16 @@ const SeenlyApp = () => {
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      const v = videoRef.current as HTMLVideoElement | null;
 
-      console.log('Stream:', stream);
+      if (v) {
+        v.srcObject = stream;
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-
-        const playPromise = videoRef.current.play();
-        console.log('Play Promise:', playPromise);
+        const playPromise = v.play();
 
         if (playPromise !== undefined) {
           playPromise
             .then(() => {
-              console.log('Video playback started');
               setCameraOpen(true);
               setCameraLoading(false);
             })
@@ -249,16 +277,15 @@ const SeenlyApp = () => {
               handlePlayError(error, stream);
             });
         } else {
-          // Fallback for browsers without play promises
           setTimeout(() => {
-            if (!videoRef.current.paused) {
+            if (!v.paused) {
               setCameraOpen(true);
               setCameraLoading(false);
             }
           }, 100);
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Camera access error:', err);
       let errorMessage = 'Camera access failed.';
 
@@ -275,9 +302,10 @@ const SeenlyApp = () => {
         setTimeout(() => {
           navigator.mediaDevices.getUserMedia({ video: true })
             .then(fallbackStream => {
-              if (videoRef.current) {
-                videoRef.current.srcObject = fallbackStream;
-                videoRef.current.play().then(() => {
+              const v = videoRef.current as HTMLVideoElement | null;
+              if (v) {
+                v.srcObject = fallbackStream;
+                v.play().then(() => {
                   setCameraOpen(true);
                   setCameraLoading(false);
                 });
@@ -297,53 +325,48 @@ const SeenlyApp = () => {
     }
   };
 
-  const handlePlayError = (error, stream) => {
+  const handlePlayError = (error: any, stream: MediaStream) => {
     setCameraLoading(false);
     setError('Failed to start video playback');
     stream.getTracks().forEach(track => track.stop());
-    // Additional cleanup
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
+    const v = videoRef.current as HTMLVideoElement | null;
+    if (v) {
+      v.srcObject = null;
     }
   };
 
   const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
+    const v = videoRef.current as HTMLVideoElement | null;
+    const c = canvasRef.current as HTMLCanvasElement | null;
+    if (v && c) {
+      const canvas = c;
+      const video = v;
       const context = canvas.getContext('2d');
+      if (!context) {
+        setError('Canvas not supported.');
+        return;
+      }
 
-      // Ensure video is ready and has dimensions
       if (video.videoWidth === 0 || video.videoHeight === 0) {
         setError('Camera not ready. Please wait a moment and try again.');
         return;
       }
 
-      // Set canvas dimensions to match video
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-
       try {
-        // Mirror the image back for capture (since we mirror display)
         context.scale(-1, 1);
         context.drawImage(video, -video.videoWidth, 0, video.videoWidth, video.videoHeight);
-
-        // Convert to data URL with good quality
         const dataURL = canvas.toDataURL('image/jpeg', 0.9);
 
-        // Validate the captured image
-        if (dataURL && dataURL.length > 1000) { // Basic validation
+        if (dataURL && dataURL.length > 1000) {
           setPhotoData(dataURL);
           setCameraOpen(false);
-
-          // Stop camera stream
-          const stream = video.srcObject;
+          const stream = video.srcObject as MediaStream | null;
           if (stream) {
             stream.getTracks().forEach(track => track.stop());
-            video.srcObject = null;
+            (video as any).srcObject = null;
           }
-
-          // Clear any existing errors
           setError('');
         } else {
           setError('Failed to capture image. Please try again.');
@@ -356,32 +379,38 @@ const SeenlyApp = () => {
   };
 
   const cancelCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject;
+    const v = videoRef.current as HTMLVideoElement | null;
+    if (v?.srcObject) {
+      const stream = v.srcObject as MediaStream;
       stream.getTracks().forEach((track) => track.stop());
-      videoRef.current.srcObject = null;
+      v.srcObject = null;
     }
     setCameraOpen(false);
     setCameraLoading(false);
     setError('');
   };
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       setError('Please select a valid image file.');
       return;
     }
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataURL = event.target.result;
-      if (dataURL && dataURL.length > 1000) {
-        setPhotoData(dataURL);
-        setCameraOpen(false);
-        setError('');
-      } else {
-        setError('Failed to load image. Please try another file.');
+    reader.onload = async (event) => {
+      try {
+        const dataURL = event.target?.result as string;
+        if (dataURL && dataURL.length > 1000) {
+          const compressed = await compressImage(dataURL);
+          setPhotoData(compressed);
+          setCameraOpen(false);
+          setError('');
+        } else {
+          setError('Failed to load image. Please try another file.');
+        }
+      } catch (err) {
+        setError('Failed to compress image. Please try another file.');
       }
     };
     reader.onerror = () => {
@@ -390,20 +419,18 @@ const SeenlyApp = () => {
     reader.readAsDataURL(file);
   };
 
-
   useEffect(() => {
-    const video = videoRef.current;
+    const video = videoRef.current as HTMLVideoElement | null;
     if (!video) return;
 
     const handleCanPlay = () => {
-      console.log('Video can play');
       if (cameraLoading) {
         setCameraOpen(true);
         setCameraLoading(false);
       }
     };
 
-    const handleError = (e) => {
+    const handleError = (e: Event) => {
       console.error('Video error event:', e);
       setError('Video stream error occurred.');
       setCameraLoading(false);
@@ -418,40 +445,23 @@ const SeenlyApp = () => {
     };
   }, [cameraLoading]);
 
-
-  const sharePost = (post) => {
+  const sharePost = (post: any) => {
     const shareText = `"${post.caption}" - This helped me feel less alone today. Check out Ibasho 💫`;
-    if (navigator.share) {
-      navigator.share({
+    if ((navigator as any).share) {
+      (navigator as any).share({
         title: 'Ibasho Moment',
         text: shareText,
         url: window.location.href,
-      }).catch((err) => console.error('Share failed:', err));
+      }).catch((err: any) => console.error('Share failed:', err));
     } else {
       navigator.clipboard.writeText(shareText);
       alert('Share text copied to clipboard!');
     }
   };
 
-  const CatIcon = () => (
-    <motion.div
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
-      className="text-2xl"
-      whileHover={{ scale: 1.2, rotate: 10 }}
-    >
-      🐱
-    </motion.div>
-  );
-
-  // useEffect(() => {
-  //   fetchUser();
-  // }, [])
-
-
-  if (loading) {
+  if(loading) {
     return (
-      <div className='w-full h-screen flex items-center justify-center'>
+      <div className='w-full h-screen flex items-center justify-center bg-black/20'>
         <Loader className="animate-spin text-4xl text-gray-500 mx-auto mt-20" />
       </div>
     )
@@ -461,32 +471,88 @@ const SeenlyApp = () => {
     <div>
       <header className="w-full h-[10vh] flex justify-between bg-gradient-to-r from-pink-100/80 to-blue-100/80 backdrop-blur-sm">
         <div className="w-full container mx-auto px-4 flex items-center justify-between">
-          <motion.h1
-            className="text-3xl font-light text-gray-800 font-serif"
-            whileHover={{ scale: 1.05 }}
-            aria-label="Ibasho Logo"
-          >
-            ibasho <span className='text-sm font-light'>(居場所)</span>
-          </motion.h1>
+          <div className="flex items-center gap-3">
+            <button
+              className="md:hidden p-2 rounded-lg border border-gray-300/80 bg-white/70"
+              onClick={() => setNavOpen(true)}
+              aria-label="Open navigation"
+            >
+              <Menu className="w-5 h-5 text-gray-700" />
+            </button>
+            <motion.h1
+              className="text-3xl font-light text-gray-800 font-serif"
+              whileHover={{ scale: 1.05 }}
+              aria-label="Ibasho Logo"
+            >
+              ibasho <span className='text-sm font-light'>(居場所)</span>
+            </motion.h1>
+          </div>
 
           <div className='flex gap-4 items-center justify-center'>
-            <div className='flex text-gray-500 rounded-full border border-gray-500 px-4 py-2 font-mono text-lg font-light'>
+            <div className='hidden md:flex text-gray-500 rounded-full border border-gray-500 px-4 py-2 font-mono text-lg font-light'>
               hi, {userProfile && <p>{userProfile?.username}</p>}
             </div>
             <motion.button
               className='text-gray-500 rounded-full border border-gray-500 px-3 py-3 font-mono text-lg font-bold'
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              aria-label="Go to Check-In"
-              onClick={() => handleGoogleLogout()}
+              aria-label="Log out"
+              onClick={() => setLogoutOpen(true)}
             >
               <LogOut size={16} />
             </motion.button>
           </div>
         </div>
       </header>
+      <Modal
+        open={logoutOpen}
+        onClose={() => setLogoutOpen(false)}
+        title="Log out"
+        description={
+          <span>
+            Are you sure you want to log out of <span className='font-semibold'>Ibasho</span>?
+          </span>
+        }
+        confirmText="Log out"
+        cancelText="Cancel"
+        onConfirm={() => {
+          setLogoutOpen(false);
+          handleGoogleLogout();
+        }}
+      />
       <div className="container mx-auto px-4 py-8 md:flex gap-8">
-        <Navigation currentView={currentView} setCurrentView={setCurrentView} />
+        {/* Desktop sidebar */}
+        <div className="hidden md:block md:w-[25%]">
+          <Navigation currentView={currentView} setCurrentView={(v) => setCurrentView(v)} />
+        </div>
+
+        {/* Mobile Drawer */}
+        <motion.div
+          className={`fixed inset-0 z-40 md:hidden ${navOpen ? '' : 'pointer-events-none'}`}
+          initial={false}
+          animate={{ opacity: navOpen ? 1 : 0 }}
+        >
+          <div className="absolute inset-0 bg-black/30" onClick={() => setNavOpen(false)} />
+          <motion.div
+            initial={false}
+            animate={{ x: navOpen ? 0 : -320 }}
+            transition={{ type: 'tween', duration: 0.25 }}
+            className="relative z-50 h-full w-[86%] max-w-xs bg-white border-r border-gray-200 p-4"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-gray-700 font-semibold">Menu</span>
+              <button className="p-2" onClick={() => setNavOpen(false)} aria-label="Close navigation">
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+            <Navigation
+              currentView={currentView}
+              setCurrentView={(v) => setCurrentView(v)}
+              onAfterNavigate={() => setNavOpen(false)}
+              className="w-full flex flex-col items-stretch gap-3"
+            />
+          </motion.div>
+        </motion.div>
 
         {currentView === 'home' && (
           <div className='w-full'>
@@ -501,8 +567,8 @@ const SeenlyApp = () => {
               capturePhoto={capturePhoto}
               cancelCamera={cancelCamera}
               handleFileUpload={handleFileUpload}
-              videoRef={videoRef}
-              canvasRef={canvasRef}
+              videoRef={videoRef as React.RefObject<HTMLVideoElement>}
+              canvasRef={canvasRef as React.RefObject<HTMLCanvasElement>}
               error={error}
             />
             <CheckInForm
@@ -510,7 +576,6 @@ const SeenlyApp = () => {
               setCaption={setCaption}
               moodTag={moodTag}
               setMoodTag={setMoodTag}
-              handleCaption={handleCaption}
               submitEntry={submitEntry}
               photoData={photoData}
               error={error}
@@ -523,7 +588,13 @@ const SeenlyApp = () => {
         {currentView === 'community' && (
           <MoodBoard
             onSendMessage={(post) => {
-              setSelectedPostForMessage(post);
+              setSelectedPostForMessage({
+                id: String(post.id),
+                caption: post.caption,
+                photo: post.photo,
+                mood: post.mood || '',
+                user_id: post.user_id,
+              });
               setCurrentView('whisper');
             }}
           />
@@ -531,9 +602,8 @@ const SeenlyApp = () => {
 
         {currentView === 'whisper' && (
           <WhisperPage
-            initialPostReference={selectedPostForMessage}
+            initialPostReference={selectedPostForMessage || undefined}
             onBackToCommunity={() => {
-              // setSelectedPostForMessage(null);
               setCurrentView('community');
             }}
           />
@@ -556,3 +626,5 @@ const SeenlyApp = () => {
 };
 
 export default SeenlyApp;
+
+

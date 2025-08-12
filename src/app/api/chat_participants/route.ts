@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 // GET /api/chat_participants
 export async function GET(request: NextRequest) {
-
-    console.log(request, "i dont even know what up");
     
     try {
         const {user, supabase} = await getSupabaseWithUser(request)
@@ -29,7 +27,6 @@ export async function GET(request: NextRequest) {
         }
 
         const { data: rows, error } = await baseQuery
-        console.log(rows, "rows");
 
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 400 })
