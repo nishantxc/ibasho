@@ -194,10 +194,17 @@ export const journalAPI = {
     rotation?: number
     user_id?: string
   }) => {
-    return apiRequest('/api/journal', {
+    const result = await apiRequest('/api/journal', {
       method: 'POST',
       body: JSON.stringify(data),
     })
+    if (typeof window !== 'undefined') {
+      try {
+        const prev = Number(localStorage.getItem('ibasho:lastJournalCount') || '0')
+        localStorage.setItem('ibasho:lastJournalCount', String(prev + 1))
+      } catch {}
+    }
+    return result
   },
 
   updateEntry: async (id: string, data: {
@@ -213,9 +220,17 @@ export const journalAPI = {
   },
 
   deleteEntry: async (id: string) => {
-    return apiRequest(`/api/journal?id=${id}`, {
+    const result = await apiRequest(`/api/journal?id=${id}`, {
       method: 'DELETE',
     })
+    if (typeof window !== 'undefined') {
+      try {
+        const prev = Number(localStorage.getItem('ibasho:lastJournalCount') || '0')
+        const next = Math.max(0, prev - 1)
+        localStorage.setItem('ibasho:lastJournalCount', String(next))
+      } catch {}
+    }
+    return result
   },
 }
 
@@ -332,4 +347,27 @@ export const api = {
   journal: journalAPI,
   posts: postsAPI,
   chatParticipants: chatParticipantsAPI,
+}
+
+// Emotional Insights API calls
+export const insightsAPI = {
+  createEmotionalInsights: async (data?: { range?: number; userId?: string }) => {
+    // Gate the request based on journal count changes persisted locally
+    try {
+      const result = await apiRequest('/api/emotional_insights', {
+        method: 'POST',
+        body: JSON.stringify(data ?? {}),
+      })
+
+      if (typeof window !== 'undefined' && result && typeof result.journalCount === 'number') {
+        try {
+          localStorage.setItem('ibasho:lastJournalCount', String(result.journalCount))
+        } catch {}
+      }
+
+      return result
+    } catch (err) {
+      throw err
+    }
+  },
 }

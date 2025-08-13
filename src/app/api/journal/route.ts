@@ -1,29 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseWithUser } from '@/utils/userFromSb'
 
-// async function getSupabaseWithUser(request: NextRequest) {
-//   const authHeader = request.headers.get('authorization')
-  
-//   if (!authHeader) {
-//     throw new Error('No authorization header')
-//   }
-//   const token = authHeader.replace('Bearer ', '')
-//   const supabase = createClient(supabaseUrl, supabaseKey)
-//   const { data: { user }, error } = await supabase.auth.getUser(token)
-
-//   if (error || !user) {
-//     throw new Error('Invalid token: ' + (error?.message || 'No user found'))
-//   }
-//   const supabaseWithAuth = createClient(supabaseUrl, supabaseKey, {
-//     global: {
-//       headers: {
-//         Authorization: `Bearer ${token}`
-//       }
-//     }
-//   })
-  
-//   return { user, supabase: supabaseWithAuth }
-// }
 
 // GET /api/journal - Get journal entries
 export async function GET(request: NextRequest) {

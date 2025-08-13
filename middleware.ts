@@ -12,8 +12,13 @@ export function middleware(request: NextRequest) {
 
   const isPublicPath = publicPaths.includes(pathname)
 
+  // Always route root to the login page to avoid showing the landing page
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
   if (isPublicPath && isLoggedIn) {
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.redirect(new URL('/home', request.url))
   }
 
   if (!isPublicPath && !isLoggedIn) {
@@ -21,4 +26,12 @@ export function middleware(request: NextRequest) {
   }
 
   return NextResponse.next()
+}
+
+// Ensure middleware runs for app routes and the root path, excluding Next.js internals and static assets
+export const config = {
+  matcher: [
+    '/',
+    '/((?!_next|.*\\..*).*)',
+  ],
 }

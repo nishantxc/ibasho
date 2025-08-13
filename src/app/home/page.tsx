@@ -18,14 +18,16 @@ import { signOut, supabase } from '../../../supabase/Supabase';
 import type { RootState } from '@/store/store';
 import type { initialPostReference } from '@/types/types';
 import { toast } from 'react-toastify';
+import PremiumWrappedStory from "@/components/Wrapped";
 
-type View = 'home' | 'journal' | 'community' | 'whisper';
+type View = 'home' | 'journal' | 'community' | 'whisper' | 'insights';
 
 const SeenlyApp: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('home');
   const [photoData, setPhotoData] = useState<string | null>(null);
   const [caption, setCaption] = useState<string>('');
   const [moodTag, setMoodTag] = useState<string>('');
+  const [moodScore, setMoodScore] = useState<number>(5);
   const [journalEntries, setJournalEntries] = useState<any[]>([]);
   const [sharedPosts, setSharedPosts] = useState<any[]>([
     { id: 1, caption: "Found peace in my morning coffee", mood: "Grateful", reactions: 12 },
@@ -192,7 +194,7 @@ const SeenlyApp: React.FC = () => {
       const response = await api.journal.createEntry({
         caption: newEntry.caption,
         mood: newEntry.mood,
-        mood_score: 8,
+        mood_score: moodScore,
         rotation: newEntry.rotation,
         images: newEntry.photo,
       })
@@ -210,7 +212,7 @@ const SeenlyApp: React.FC = () => {
     setCurrentView('journal');
     setError('');
     setLoading(false)
-  }, [photoData, caption, moodTag]);
+  }, [photoData, caption, moodTag, moodScore]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -579,11 +581,14 @@ const SeenlyApp: React.FC = () => {
               submitEntry={submitEntry}
               photoData={photoData}
               error={error}
+              moodScore={moodScore}
+              setMoodScore={setMoodScore}
             />
           </div>
         )}
 
         {currentView === 'journal' && <JournalTimeline journalEntries={journalEntries} onBack={() => setCurrentView('home')} />}
+        {currentView === 'insights' && <PremiumWrappedStory />}
 
         {currentView === 'community' && (
           <MoodBoard

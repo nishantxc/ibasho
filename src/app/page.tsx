@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { Heart, Mail, X, Eye, MessageCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import EmotionalWrapped from '../components/Wrapped';
 
 type Post = {
   id: number;
@@ -93,6 +94,8 @@ const IbashoLanding = () => {
           />
         </div>
       </motion.div>
+
+      <EmotionalWrapped />
 
       {/* Hero Section */}
       <motion.section style={{ y: heroY }} className="relative min-h-screen flex items-center justify-center px-4">
