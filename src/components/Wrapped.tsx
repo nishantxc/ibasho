@@ -1,38 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-
-// Mock API function for demo
-const insightsAPI = {
-  createEmotionalInsights: async ({ range }: { range: number }) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    return {
-      journalCount: 15,
-      summary: {
-        weekLabel: "Week 32 • Aug 4–11",
-        archetype: {
-          name: "The Warrior",
-          description: "A resilient and determined soul, forged in the fire of adversity.",
-          rarityPct: 60
-        },
-        moodScore: 72,
-        weekSummary: "This week was a tumultuous journey of emotions, with moments of overwhelming darkness and fleeting glimpses of joy.",
-        insights: [
-          { metric: "Calm", value: 65, rank: "Below Average" },
-          { metric: "Joy", value: 89, rank: "Above Average" },
-          { metric: "Resilience", value: 74, rank: "Average" }
-        ],
-        personalNote: "It's clear that you're facing challenges, but don't lose sight of the moments of joy and calm. They're a testament to your strength.",
-        theme: {
-          bg: "#8B5CF6", // Purple theme
-          card: "bg-white/10 backdrop-blur-sm border border-white/20"
-        }
-      }
-    };
-  }
-};
+import { insightsAPI } from "@/utils/api";
 
 // Utility function to determine if a color is light or dark
 const isLightColor = (color: string): boolean => {
