@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { BellElectric, Book, House, MessageCircleHeart, Star } from "lucide-react";
+import { BellElectric, Book, Group, House, MessageCircleHeart, Star, Stars, Users } from "lucide-react";
 import React from "react";
 
 type View = 'home' | 'journal' | 'community' | 'whisper' | 'insights'
@@ -23,9 +23,9 @@ const Navigation = React.memo(({ currentView, setCurrentView, onAfterNavigate, c
     {([
       { key: 'home', label: 'Check In', icon: <House /> },
       { key: 'journal', label: 'Journal', icon: <Book /> },
-      { key: 'community', label: 'Community', icon: <Star /> },
+      { key: 'community', label: 'Community', icon: <Users /> },
       { key: 'whisper', label: 'Whisper', icon: <MessageCircleHeart /> },
-      { key: 'insights', label: 'Insights', icon: <BellElectric /> },
+      { key: 'insights', label: 'Insights', icon: <Stars /> },
     ] as { key: View; label: string; icon: React.ReactNode }[]).map((item) => (
       <motion.button
         key={item.key}
