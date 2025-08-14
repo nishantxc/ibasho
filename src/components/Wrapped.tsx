@@ -36,7 +36,7 @@ export default function PremiumWrappedStory({ days = 90 }: { days?: number }) {
               setLoading(false)
               return
             }
-          } catch {}
+          } catch { }
         }
 
         const json = await insightsAPI.createEmotionalInsights({ range: days })
@@ -73,7 +73,7 @@ export default function PremiumWrappedStory({ days = 90 }: { days?: number }) {
               localStorage.setItem('ibasho:lastInsightsCount', String(json.journalCount))
             }
             localStorage.setItem('ibasho:lastInsightsPayload', JSON.stringify(safePayload))
-          } catch {}
+          } catch { }
         }
       } catch (e: any) {
         setError(e.message)
@@ -83,29 +83,38 @@ export default function PremiumWrappedStory({ days = 90 }: { days?: number }) {
     })()
   }, [days])
 
+  console.log(payload, "payload");
+  
+
   return (
-    <div className=" w-full min-h-screen flex items-center justify-center bg-gray-900 p-4">
+    <div className={`w-full min-h-screen flex items-center justify-center p-4`}>
+      {/* <div className="bg-[#964B00] text-white p-4">
+  Brown background
+</div> */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         className="border-4 border-white relative w-[380px] sm:w-[420px] rounded-[28px] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.8)]"
-        style={{ backgroundImage: payload?.theme?.bg }}
+        style={{
+          background: payload?.theme?.bg || '#18181b'
+        }}
+        // style={{ backgroundImage: payload?.theme?.bg }}
       >
         {/* Subtle texture overlay */}
-        <div className="absolute inset-0 opacity-20"
-             style={{
-               backgroundImage: `
+        {/* <div className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `
                  radial-gradient(circle at 20% 20%, rgba(255,255,255,0.1) 0%, transparent 20%),
                  radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 20%),
                  radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 0%, transparent 30%)
                `
-             }}
-        />
+          }}
+        /> */}
 
         {/* Content */}
         <div className="relative h-full p-8 flex flex-col">
-          
+
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -116,7 +125,7 @@ export default function PremiumWrappedStory({ days = 90 }: { days?: number }) {
             <div className="text-white/60 text-xs font-medium tracking-[0.2em] uppercase mb-6">
               {loading ? 'Loading…' : (payload?.weekLabel ?? '')}
             </div>
-            
+
             {/* Custom Archetype Illustration */}
             {/* <motion.div
               initial={{ scale: 0, rotate: -10 }}
@@ -126,7 +135,7 @@ export default function PremiumWrappedStory({ days = 90 }: { days?: number }) {
             >
               <DeepFeelerIllustration />
             </motion.div> */}
-            
+
             <motion.h1
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -135,7 +144,7 @@ export default function PremiumWrappedStory({ days = 90 }: { days?: number }) {
             >
               {payload?.archetype?.name ?? ''}
             </motion.h1>
-            
+
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -144,14 +153,14 @@ export default function PremiumWrappedStory({ days = 90 }: { days?: number }) {
             >
               {payload?.archetype?.description ?? ''}
             </motion.p>
-            
+
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.2 }}
               className="inline-block px-4 py-1.5 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-white/10 text-white/80 text-xs font-medium"
             >
-              {payload ? `Rare type • Only ${payload?.archetype?.rarityPct}% this week` : ' '} 
+              {payload ? `Rare type • Only ${payload?.archetype?.rarityPct}% this week` : ' '}
             </motion.div>
           </motion.div>
 
@@ -244,14 +253,14 @@ export default function PremiumWrappedStory({ days = 90 }: { days?: number }) {
               top: `${20 + i * 25}%`,
               right: `${15 + i * 5}%`
             }}
-            animate={{ 
+            animate={{
               opacity: [0.2, 0.8, 0.2],
               scale: [0.5, 1.2, 0.5]
             }}
-            transition={{ 
-              duration: 3 + i, 
-              repeat: Infinity, 
-              delay: i * 0.7 
+            transition={{
+              duration: 3 + i,
+              repeat: Infinity,
+              delay: i * 0.7
             }}
           />
         ))}

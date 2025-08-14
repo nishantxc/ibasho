@@ -321,6 +321,7 @@ export const chatParticipantsAPI = {
       photo: string;
       mood: string;
       user_id: string;
+      username: string;
     };
   }) => {
     return apiRequest('/api/chat_participants', {

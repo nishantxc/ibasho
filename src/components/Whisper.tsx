@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, MessageCircle, Sparkles, Menu, X, Loader } from 'lucide-react';
+import { Send, MessageCircle, Sparkles, ArrowLeft, X, Loader, Heart } from 'lucide-react';
 import { supabase } from '../../supabase/Supabase';
 import { api } from '@/utils/api';
 import { useSelector } from 'react-redux';
@@ -22,6 +22,8 @@ type ChatMessage = {
   is_own_message?: boolean;
 };
 
+type ViewState = 'chat-list' | 'chat-conversation';
+
 const WhisperPage: React.FC<WhisperPageProps> = ({
   initialPostReference,
   onBackToCommunity
@@ -33,11 +35,20 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
   const [newMessage, setNewMessage] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [selectedChatId, setSelectedChatId] = useState<string>('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isInvitesOpen, setIsInvitesOpen] = useState<boolean>(false);
+  const [viewState, setViewState] = useState<ViewState>('chat-list');
+  const [hasInitialMessage, setHasInitialMessage] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const user = useSelector((state: RootState) => state.userProfile);
+
+  // Check if current chat is accepted
+  const getCurrentChatStatus = () => {
+    const currentChat = chatParticipants.find(p => p.chat_id === selectedChatId);
+    return currentChat?.request_status || 'pending';
+  };
+
+  const isCurrentChatAccepted = getCurrentChatStatus() === 'accepted';
 
   // Fetch chat participants for current user
   const fetchChatParticipants = async () => {
@@ -52,11 +63,14 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
       const accepted = list.filter((p: any) => p.request_status === 'accepted');
       const pending = list.filter((p: any) => p.request_status === 'pending' && p.sender_id === currentId);
       const sent = list.filter((p: any) => p.request_status === 'pending' && p.user_id === currentId);
-      setChatParticipants(accepted);
+      
+      // Hide declined requests as requested
+      setChatParticipants([...accepted, ...pending, ...sent]);
       setPendingInvites(pending);
       setSentInvites(sent);
-      // Auto-select first chat if none selected
-      if (!selectedChatId && list.length > 0) {
+      
+      // Auto-select first chat if none selected and we're not on mobile
+      if (!selectedChatId && list.length > 0 && window.innerWidth >= 768) {
         setSelectedChatId(list[0].chat_id);
       }
     } catch (error) {
@@ -65,23 +79,32 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
     setLoading(false);
   };
 
-  // Update useEffect to fetch chat participants
   useEffect(() => {
     if (user) {
       fetchChatParticipants();
     }
   }, []);
 
-  // If opened with a post reference, pre-select its chat
+  // If opened with a post reference, pre-select its chat and go to conversation
   useEffect(() => {
     if (user && initialPostReference) {
       const userIds = [user.user_id, initialPostReference.user_id].sort();
       const chatId = `${userIds[0]}_${userIds[1]}`;
       setSelectedChatId(chatId);
+      setViewState('chat-conversation');
     }
   }, [user, initialPostReference]);
 
-  // Update fetchMessages to use chat_id
+  // Check if initial message has been sent for current chat
+  useEffect(() => {
+    if (selectedChatId && messages.length > 0) {
+      const userMessages = messages.filter(m => m.user_id === user?.user_id);
+      setHasInitialMessage(userMessages.length > 0);
+    } else {
+      setHasInitialMessage(false);
+    }
+  }, [messages, selectedChatId, user?.user_id]);
+
   const fetchMessages = async (chatId?: string) => {
     if (!user || !chatId) return;
     setLoading(true);
@@ -106,9 +129,13 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
     setLoading(false);
   };
 
-  // Update handleSendMessage to use chat_id
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !user) return;
+
+    // If chat is not accepted and user already sent initial message, prevent sending
+    if (!isCurrentChatAccepted && hasInitialMessage) {
+      return;
+    }
 
     try {
       let chatId = selectedChatId;
@@ -119,7 +146,11 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
       }
       if (!chatId) return;
 
-      const result = await api.messages.createMessage({ content: newMessage, chat_id: chatId, username: user.username });
+      const result = await api.messages.createMessage({ 
+        content: newMessage, 
+        chat_id: chatId, 
+        username: user.username 
+      });
       const m = result.message;
       console.log(m, "find user name");
       
@@ -132,22 +163,104 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
         chat_id: m.chat_id,
         is_own_message: true,
       };
+      
       setMessages(prev => {
         const exists = prev.some((msg) => msg.id === newMsg.id);
         if (exists) return prev;
         return [...prev, newMsg];
       });
       setNewMessage('');
+      setHasInitialMessage(true);
     } catch (error) {
       console.error('Error sending message:', error);
     }
   };
 
-  // Add sidebar for chat participants (Chats only)
+  const handleChatSelect = (chatId: string) => {
+    setSelectedChatId(chatId);
+    fetchMessages(chatId);
+    setViewState('chat-conversation');
+  };
+
+  const handleBackToChats = () => {
+    setViewState('chat-list');
+    setSelectedChatId('');
+    setMessages([]);
+  };
+
+  // Mobile Chat List Component
+  const ChatListView = () => (
+    <div className="w-full h-full bg-gradient-to-br from-gray-50 to-blue-50">
+      <div className="sticky top-0 z-10 bg-white/60 backdrop-blur border-b border-gray-200 px-4 py-4">
+        <div className="flex items-center justify-center gap-2">
+          <Sparkles className="w-5 h-5 text-gray-700" />
+          <h3 className="text-xl font-semibold text-gray-800">Your Conversations</h3>
+        </div>
+        <button
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-xs px-3 py-1.5 rounded border border-gray-200 bg-white/70 text-gray-700 hover:bg-gray-50"
+          onClick={() => setIsInvitesOpen(true)}
+        >
+          Invites
+        </button>
+      </div>
+
+      <div className="p-4">
+        {chatParticipants.length === 0 ? (
+          <div className="text-center py-12">
+            <Heart className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+            <p className="text-gray-500 text-sm">No conversations yet</p>
+            <p className="text-gray-400 text-xs mt-1">Reach out to someone from the community</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {chatParticipants.map((participant) => (
+              <motion.div
+                key={participant.id}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-4 px-4 py-4 rounded-2xl bg-white/70 backdrop-blur-sm border border-gray-200 hover:bg-white/90 cursor-pointer"
+                onClick={() => handleChatSelect(participant.chat_id)}
+              >
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-pink-100 flex items-center justify-center">
+                  <span className="text-gray-700 font-medium">
+                    {(participant.user_id === user.user_id 
+                      ? participant.initial_post_reference?.username 
+                      : participant.username || 'U').substring(0, 1)}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-800 font-medium truncate">
+                    {participant.user_id === user.user_id 
+                      ? (participant.initial_post_reference?.username || 'Unknown')
+                      : (participant.username || 'Unknown')}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {participant.request_status === 'pending' && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">
+                        Waiting for response
+                      </span>
+                    )}
+                    {participant.request_status === 'accepted' && (
+                      <span className="text-xs text-green-600">Connected</span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-xs text-gray-400">
+                  →
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Desktop Sidebar Component
   const RenderSidebar = () => (
     <div className="w-full py-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-gray-800">Chats</h3>
+        <h3 className="font-semibold text-gray-800">Conversations</h3>
         <button
           className="text-xs px-2 py-1 rounded border border-gray-200 bg-white/70 text-gray-700 hover:bg-gray-50"
           onClick={() => setIsInvitesOpen(true)}
@@ -163,19 +276,23 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
             onClick={() => {
               setSelectedChatId(participant.chat_id);
               fetchMessages(participant.chat_id);
-              setIsSidebarOpen(false);
             }}
           >
             <div className='border border-black text-black rounded-full px-2'>
               {(participant.user_id === user.user_id ? participant.initial_post_reference?.username : participant.username || 'U').substring(0, 1)}
             </div>
-            <p className="text-sm text-black font-medium truncate">
-              {participant.user_id === user.user_id ? (participant.initial_post_reference?.username || 'Unknown') : (participant.username || 'Unknown')}
-            </p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-black font-medium truncate">
+                {participant.user_id === user.user_id ? (participant.initial_post_reference?.username || 'Unknown') : (participant.username || 'Unknown')}
+              </p>
+              {participant.request_status === 'pending' && (
+                <p className="text-xs text-yellow-600">Waiting...</p>
+              )}
+            </div>
           </motion.div>
         ))}
         {chatParticipants.length === 0 && (
-          <p className="text-xs text-gray-500 px-2 py-2">No chats yet</p>
+          <p className="text-xs text-gray-500 px-2 py-2">No conversations yet</p>
         )}
       </div>
     </div>
@@ -199,17 +316,17 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
             className="relative z-10 w-[92%] max-w-lg bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
           >
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-white/70">
-              <h4 className="text-sm font-semibold text-gray-800">Invites</h4>
+              <h4 className="text-sm font-semibold text-gray-800">Connection Requests</h4>
               <button className="p-2" onClick={() => setIsInvitesOpen(false)}>
                 <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
             <div className="p-4 grid grid-cols-1 gap-4 max-h-[70vh] overflow-y-auto">
               <div>
-                <h5 className="text-xs font-medium text-gray-700 mb-2">Requests</h5>
+                <h5 className="text-xs font-medium text-gray-700 mb-2">Waiting for your response</h5>
                 <div className="space-y-2">
                   {pendingInvites.length === 0 && (
-                    <p className="text-xs text-gray-500">No requests</p>
+                    <p className="text-xs text-gray-500">No pending requests</p>
                   )}
                   {pendingInvites.map((invite) => (
                     <div key={invite.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-white">
@@ -221,7 +338,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                       </div>
                       <div className="flex items-center gap-2">
                         <button
-                          className="text-xs px-2 py-1 rounded bg-green-100 text-green-700"
+                          className="text-xs px-3 py-1 rounded-full bg-green-100 text-green-700 hover:bg-green-200"
                           onClick={async () => {
                             await api.chatParticipants.updateChatParticipantStatus({ chat_id: invite.chat_id, request_status: 'accepted' })
                             fetchChatParticipants()
@@ -230,13 +347,13 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                           Accept
                         </button>
                         <button
-                          className="text-xs px-2 py-1 rounded bg-red-100 text-red-700"
+                          className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200"
                           onClick={async () => {
                             await api.chatParticipants.updateChatParticipantStatus({ chat_id: invite.chat_id, request_status: 'declined' })
                             fetchChatParticipants()
                           }}
                         >
-                          Decline
+                          Maybe later
                         </button>
                       </div>
                     </div>
@@ -244,10 +361,10 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                 </div>
               </div>
               <div>
-                <h5 className="text-xs font-medium text-gray-700 mb-2">Sent Requests</h5>
+                <h5 className="text-xs font-medium text-gray-700 mb-2">Your outreach</h5>
                 <div className="space-y-2">
                   {sentInvites.length === 0 && (
-                    <p className="text-xs text-gray-500">No sent requests</p>
+                    <p className="text-xs text-gray-500">No outgoing requests</p>
                   )}
                   {sentInvites.map((invite) => (
                     <div key={invite.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-gray-200 bg-white">
@@ -257,7 +374,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                         </div>
                         <p className="text-sm text-black font-medium truncate">{invite.recipient?.username || 'Unknown'}</p>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">Pending</div>
+                      <div className="flex items-center gap-2 text-xs text-amber-600">Door knocked ✨</div>
                     </div>
                   ))}
                 </div>
@@ -327,17 +444,151 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
     }
   };
 
-  if(loading) {
+  if(loading && viewState === 'chat-list') {
     return (
-      <div className='w-full h-[80vh] flex items-center justify-center bg-tranparent'>
+      <div className='w-full h-[80vh] flex items-center justify-center bg-transparent'>
         <Loader className="animate-spin text-4xl text-gray-500 mx-auto mt-20" />
       </div>
     )
   }
 
+  // Mobile view logic
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  
+  if (isMobile) {
+    if (viewState === 'chat-list') {
+      return (
+        <div className="w-full h-[80vh]">
+          <ChatListView />
+          <RenderInvitesModal />
+        </div>
+      );
+    }
+    
+    // Mobile conversation view
+    return (
+      <div className="w-full h-[80vh] flex flex-col bg-gradient-to-br from-gray-50 to-blue-50">
+        {/* Mobile Header */}
+        <div className="sticky top-0 z-10 bg-white/60 backdrop-blur border-b border-gray-200 px-4 py-3 flex items-center gap-3">
+          <button
+            onClick={handleBackToChats}
+            className="p-2 rounded-lg border border-gray-200 bg-white/70"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          </button>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 text-sm">
+              {getCurrentChatDisplay()?.initial || 'U'}
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-medium text-gray-800 truncate">
+                {getCurrentChatDisplay()?.name || 'Select a chat'}
+              </span>
+              {!isCurrentChatAccepted && (
+                <span className="text-xs text-amber-600">Awaiting connection</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Post Reference Header */}
+        {initialPostReference && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4"
+          >
+            <div className="flex items-center space-x-3">
+              <img
+                src={initialPostReference.photo}
+                alt="Post reference"
+                className="w-12 h-12 object-cover rounded-lg"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-800 font-medium">Reaching out about this moment</p>
+                <p className="text-xs text-gray-600 truncate">"{initialPostReference.caption}"</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Messages */}
+        <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+          <AnimatePresence>
+            {messages.map((message, index) => (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(index * 0.04, 0.2) }}
+                className={`group ${message.is_own_message ? 'flex justify-end' : ''}`}
+              >
+                <div className={`flex items-end gap-3 mb-2 max-w-[80%] ${message.is_own_message ? 'flex-row-reverse' : ''}`}>
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-blue-100 to-pink-100">
+                    <p className="text-gray-600 text-sm font-medium">
+                      {message.username.split('')[0]}
+                    </p>
+                  </div>
+                  <div className={`flex-1 ${message.is_own_message ? 'text-right' : ''}`}>
+                    <div className={`flex items-center gap-2 mb-1 ${message.is_own_message ? 'justify-end' : ''}`}>
+                      <span className="text-xs font-medium text-gray-800">{message.username}</span>
+                      <span className="text-[10px] text-gray-400">{new Date(message.created_at).toLocaleString()}</span>
+                    </div>
+                    <div className={`${message.is_own_message ? 'bg-gradient-to-r from-blue-100 to-blue-50' : 'bg-white/80'} backdrop-blur-sm rounded-3xl p-3 shadow-sm border border-gray-100`}>
+                      <p className="text-gray-800 leading-relaxed break-words">{message.content}</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Message Input */}
+        <div className="border-t border-gray-200 bg-white/60 backdrop-blur-sm p-4">
+          {!isCurrentChatAccepted && hasInitialMessage ? (
+            <div className="text-center py-4">
+              <Heart className="w-6 h-6 mx-auto text-pink-400 mb-2" />
+              <p className="text-sm text-gray-600">Your message has been sent</p>
+              <p className="text-xs text-gray-500">Waiting for them to open the conversation</p>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 relative">
+                <textarea
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder={initialPostReference ? "Share what this moment means to you..." : "Share what's on your heart..."}
+                  className="text-black/80 w-full px-4 py-3 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-opacity-50 resize-none"
+                  rows={1}
+                  maxLength={280}
+                />
+                <div className="absolute bottom-2 right-2 text-xs text-gray-400">
+                  {newMessage.length}/280
+                </div>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim()}
+                className="px-4 py-3 bg-gradient-to-r from-pink-200 to-blue-200 text-gray-800 rounded-2xl font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md transition-shadow"
+              >
+                <Send className="w-5 h-5" />
+              </motion.button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop view (unchanged from original structure)
   return (
-    <div className="w-full flex flex-col md:flex-row max-h-[85vh] bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* Sidebar - Desktop */}
+    <div className="w-full h-[80vh] flex flex-col md:flex-row max-h-[85vh] bg-gradient-to-br from-gray-50 to-blue-50">
+      {/* Desktop Sidebar */}
       <motion.div
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -354,78 +605,25 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
             <Sparkles className="w-5 h-5 text-gray-700" />
             <h3 className="text-xl font-semibold text-gray-800">Community Whispers</h3>
           </motion.div>
-
           <RenderSidebar />
         </div>
       </motion.div>
 
-      {/* Mobile Sidebar Drawer */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 md:hidden"
-          >
-            <div className="absolute inset-0 bg-black/20" onClick={() => setIsSidebarOpen(false)} />
-            <motion.div
-              initial={{ x: -320 }}
-              animate={{ x: 0 }}
-              exit={{ x: -320 }}
-              transition={{ type: 'tween', duration: 0.25 }}
-              className="relative z-50 h-full w-[88%] max-w-sm bg-white/80 backdrop-blur border-r border-gray-200 py-6"
-            >
-              <div className="flex items-center justify-between px-4 pb-4 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-gray-700" />
-                  <h3 className="text-lg font-semibold text-gray-800">Chats</h3>
-                </div>
-                <button aria-label="Close sidebar" className="p-2" onClick={() => setIsSidebarOpen(false)}>
-                  <X className="w-5 h-5 text-gray-600" />
-                </button>
-              </div>
-              <div className="px-2">
-                <RenderSidebar />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col overflow-y-scroll h-[50vh] md:h-[80vh]">
-        {/* Mobile top bar */}
-        <div className="md:hidden sticky top-0 z-10 bg-white/60 backdrop-blur border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-          <button
-            aria-label="Open sidebar"
-            className="p-2 rounded-lg border border-gray-200 bg-white/70"
-            onClick={() => setIsSidebarOpen(true)}
-          >
-            <Menu className="w-5 h-5 text-gray-700" />
-          </button>
-          <div className="flex items-center gap-2 text-gray-800 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 text-sm">
-              {(getCurrentChatDisplay()?.initial || 'U')}
-            </div>
-            <span className="text-sm font-medium truncate max-w-[45vw]">{getCurrentChatDisplay()?.name || 'Select a chat'}</span>
-          </div>
-          <button
-            className="text-xs px-2 py-1 rounded border border-gray-200 bg-white/70 text-gray-700"
-            onClick={() => setIsInvitesOpen(true)}
-          >
-            Invites
-          </button>
-        </div>
         {/* Desktop chat top bar */}
         <div className="hidden md:flex sticky top-0 z-10 bg-white/60 backdrop-blur border-b border-gray-200 px-5 py-3 items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 text-sm">
-              {(getCurrentChatDisplay()?.initial || 'U')}
+              {getCurrentChatDisplay()?.initial || 'U'}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-semibold text-gray-800 truncate">{getCurrentChatDisplay()?.name || 'Select a chat'}</span>
-              <span className="text-xs text-gray-500 truncate">Direct message</span>
+              <span className="text-sm font-semibold text-gray-800 truncate">
+                {getCurrentChatDisplay()?.name || 'Select a chat'}
+              </span>
+              <span className="text-xs text-gray-500 truncate">
+                {!isCurrentChatAccepted ? 'Awaiting connection' : 'Connected'}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -437,12 +635,13 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
             </button>
           </div>
         </div>
+
         {/* Post Reference Header */}
         {initialPostReference && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white bg-opacity-80 backdrop-blur-sm border-b border-gray-200 p-4"
+            className="bg-white/80 backdrop-blur-sm border-b border-gray-200 p-4"
           >
             <div className="flex items-center space-x-3">
               <img
@@ -450,8 +649,8 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                 alt="Post reference"
                 className="w-12 h-12 object-cover rounded-lg"
               />
-              <div className="flex-1">
-                <p className="text-sm text-gray-800 font-medium">Replying to a post</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-800 font-medium">Reaching out about this moment</p>
                 <p className="text-xs text-gray-600 truncate">"{initialPostReference.caption}"</p>
               </div>
               <motion.button
@@ -478,12 +677,10 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                 className={`group ${message.is_own_message ? 'flex justify-end' : ''}`}
               >
                 <div className={`flex items-end gap-3 mb-2 max-w-[80%] md:max-w-[70%] ${message.is_own_message ? 'flex-row-reverse' : ''}`}>
-                  <div className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-200">
-                    {/* <MessageCircle className="w-4 h-4 md:w-5 md:h-5 text-gray-600" /> */}
-                    <p className="p-4 text-gray-600">
-                      
+                  <div className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-blue-100 to-pink-100">
+                    <p className="text-gray-600 text-sm font-medium">
                       {message.username.split('')[0]}
-                      </p>
+                    </p>
                   </div>
                   <div className={`flex-1 ${message.is_own_message ? 'text-right' : ''}`}>
                     <div className={`flex items-center gap-2 mb-1 ${message.is_own_message ? 'justify-end' : ''}`}>
@@ -491,7 +688,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                       <span className="text-[10px] md:text-xs text-gray-400">{new Date(message.created_at).toLocaleString()}</span>
                     </div>
 
-                    <div className={`${message.is_own_message ? 'bg-gradient-to-r from-blue-100 to-blue-50' : 'bg-white/80'} backdrop-blur-sm rounded-3xl p-3 md:p-4 shadow-sm border border-gray-100` }>
+                    <div className={`${message.is_own_message ? 'bg-gradient-to-r from-blue-100 to-blue-50' : 'bg-white/80'} backdrop-blur-sm rounded-3xl p-3 md:p-4 shadow-sm border border-gray-100`}>
                       <p className="text-gray-800 leading-relaxed break-words">{message.content}</p>
                     </div>
                   </div>
@@ -504,31 +701,39 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
 
         {/* Message Input */}
         <div className="border-t border-gray-200 bg-white/60 backdrop-blur-sm p-4">
-          <div className="flex items-center gap-3 md:gap-4">
-            <div className="flex-1 relative">
-              <textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={handleKeyPress}
-                placeholder={initialPostReference ? "Send a message about this post..." : "Share what's on your heart..."}
-                className="text-black/80 w-full px-3 md:px-4 py-3 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-opacity-50 resize-none"
-                rows={1}
-                maxLength={280}
-              />
-              <div className="absolute bottom-2 right-2 text-xs text-gray-400">
-                {newMessage.length}/280
-              </div>
+          {!isCurrentChatAccepted && hasInitialMessage ? (
+            <div className="text-center py-4">
+              <Heart className="w-6 h-6 mx-auto text-pink-400 mb-2" />
+              <p className="text-sm text-gray-600">Your message has been sent</p>
+              <p className="text-xs text-gray-500">Waiting for them to open the conversation</p>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleSendMessage}
-              disabled={!newMessage.trim()}
-              className="px-4 md:px-6 py-3 bg-gradient-to-r from-pink-200 to-blue-200 text-gray-800 rounded-2xl font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md transition-shadow"
-            >
-              <Send className="w-5 h-5" />
-            </motion.button>
-          </div>
+          ) : (
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="flex-1 relative">
+                <textarea
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder={initialPostReference ? "Share what this moment means to you..." : "Share what's on your heart..."}
+                  className="text-black/80 w-full px-3 md:px-4 py-3 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-opacity-50 resize-none"
+                  rows={1}
+                  maxLength={280}
+                />
+                <div className="absolute bottom-2 right-2 text-xs text-gray-400">
+                  {newMessage.length}/280
+                </div>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim()}
+                className="px-4 md:px-6 py-3 bg-gradient-to-r from-pink-200 to-blue-200 text-gray-800 rounded-2xl font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md transition-shadow"
+              >
+                <Send className="w-5 h-5" />
+              </motion.button>
+            </div>
+          )}
         </div>
       </div>
       <RenderInvitesModal />
