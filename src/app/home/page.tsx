@@ -599,6 +599,7 @@ const SeenlyApp: React.FC = () => {
                 photo: post.photo,
                 mood: post.mood || '',
                 user_id: post.user_id,
+                username: post.username,
               });
               setCurrentView('whisper');
             }}

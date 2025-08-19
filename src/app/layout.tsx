@@ -33,6 +33,8 @@ const amita = localFont({
 export const metadata: Metadata = {
   title: "Ibasho",
   description: "A soft place for your feelings",
+  manifest: "/manifest.json",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({

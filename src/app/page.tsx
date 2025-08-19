@@ -95,7 +95,6 @@ const IbashoLanding = () => {
         </div>
       </motion.div>
 
-      <EmotionalWrapped />
 
       {/* Hero Section */}
       <motion.section style={{ y: heroY }} className="relative min-h-screen flex items-center justify-center px-4">
