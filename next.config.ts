@@ -1,13 +1,14 @@
-// next.config.js or next.config.ts
+// next.config.ts
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 import withPWAInit from "next-pwa";
 
+// Wrap with PWA
 const withPWA = withPWAInit({
   dest: "public",
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === "development", // only enable in prod
+  disable: process.env.NODE_ENV === "development", // enable only in prod
 });
 
 const nextConfig: NextConfig = {
@@ -17,18 +18,19 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "**.supabase.co", // ✅ covers Supabase storage
+        hostname: "**.supabase.co", // ✅ Supabase images
       },
       {
         protocol: "https",
-        hostname: "lh3.googleusercontent.com", // ✅ Google profile images
+        hostname: "lh3.googleusercontent.com", // ✅ Google profile pics
       },
     ],
   },
 };
 
+// Wrap with PWA first, then Sentry
 export default withSentryConfig(
-  withPWA(nextConfig), // 👈 wrap BOTH together
+  withPWA(nextConfig),
   {
     org: "sunfocus-a6",
     project: "javascript-nextjs",
