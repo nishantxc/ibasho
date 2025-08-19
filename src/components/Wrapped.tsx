@@ -97,7 +97,7 @@ export default function PremiumWrappedStory({ days = 90 }: { days?: number }) {
   const gradientBg = payload ? createGradientBackground(payload.theme.bg, isLight) : '';
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center p-4 bg-gray-100">
+    <div className="w-full min-h-screen flex items-center justify-center">
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

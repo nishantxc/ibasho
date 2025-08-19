@@ -472,12 +472,12 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
         <div className="sticky top-0 z-10 bg-white/60 backdrop-blur border-b border-gray-200 px-4 py-3 flex items-center gap-3">
           <button
             onClick={handleBackToChats}
-            className="p-2 rounded-lg border border-gray-200 bg-white/70"
+            className="p-2 rounded-sm border border-gray-200 bg-white/70"
           >
             <ArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 text-sm">
+            <div className="w-8 h-8 rounded-sm bg-gray-200 flex items-center justify-center text-gray-700 text-sm">
               {getCurrentChatDisplay()?.initial || 'U'}
             </div>
             <div className="flex flex-col min-w-0">
@@ -502,7 +502,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
               <img
                 src={initialPostReference.photo}
                 alt="Post reference"
-                className="w-12 h-12 object-cover rounded-lg"
+                className="w-12 h-12 object-cover rounded-sm"
               />
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-800 font-medium">Reaching out about this moment</p>
@@ -524,7 +524,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                 className={`group ${message.is_own_message ? 'flex justify-end' : ''}`}
               >
                 <div className={`flex items-end gap-3 mb-2 max-w-[80%] ${message.is_own_message ? 'flex-row-reverse' : ''}`}>
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-blue-100 to-pink-100">
+                  <div className="w-9 h-9 rounded-sm flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-blue-100 to-pink-100">
                     <p className="text-gray-600 text-sm font-medium">
                       {message.username.split('')[0]}
                     </p>
@@ -534,7 +534,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                       <span className="text-xs font-medium text-gray-800">{message.username}</span>
                       <span className="text-[10px] text-gray-400">{new Date(message.created_at).toLocaleString()}</span>
                     </div>
-                    <div className={`${message.is_own_message ? 'bg-gradient-to-r from-blue-100 to-blue-50' : 'bg-white/80'} backdrop-blur-sm rounded-3xl p-3 shadow-sm border border-gray-100`}>
+                    <div className={`${message.is_own_message ? 'bg-gradient-to-r from-blue-100 to-blue-50' : 'bg-white/80'} backdrop-blur-sm rounded-sm p-3 shadow-sm border border-gray-100`}>
                       <p className="text-gray-800 leading-relaxed break-words">{message.content}</p>
                     </div>
                   </div>
@@ -561,7 +561,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={handleKeyPress}
                   placeholder={initialPostReference ? "Share what this moment means to you..." : "Share what's on your heart..."}
-                  className="text-black/80 w-full px-4 py-3 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-opacity-50 resize-none"
+                  className="text-black/80 w-full px-4 py-3 bg-white/80 backdrop-blur-sm rounded-sm border border-gray-200 focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-opacity-50 resize-none"
                   rows={1}
                   maxLength={280}
                 />
@@ -574,7 +574,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                 whileTap={{ scale: 0.95 }}
                 onClick={handleSendMessage}
                 disabled={!newMessage.trim()}
-                className="px-4 py-3 bg-gradient-to-r from-pink-200 to-blue-200 text-gray-800 rounded-2xl font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md transition-shadow"
+                className="px-4 py-3 bg-gradient-to-r from-pink-200 to-blue-200 text-gray-800 rounded-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md transition-shadow"
               >
                 <Send className="w-5 h-5" />
               </motion.button>
@@ -614,7 +614,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
         {/* Desktop chat top bar */}
         <div className="hidden md:flex sticky top-0 z-10 bg-white/60 backdrop-blur border-b border-gray-200 px-5 py-3 items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 text-sm">
+            <div className="w-9 h-9 rounded-sm bg-gray-200 flex items-center justify-center text-gray-700 text-sm">
               {getCurrentChatDisplay()?.initial || 'U'}
             </div>
             <div className="flex flex-col min-w-0">
@@ -647,7 +647,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
               <img
                 src={initialPostReference.photo}
                 alt="Post reference"
-                className="w-12 h-12 object-cover rounded-lg"
+                className="w-12 h-12 object-cover rounded-sm"
               />
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-800 font-medium">Reaching out about this moment</p>
@@ -677,7 +677,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                 className={`group ${message.is_own_message ? 'flex justify-end' : ''}`}
               >
                 <div className={`flex items-end gap-3 mb-2 max-w-[80%] md:max-w-[70%] ${message.is_own_message ? 'flex-row-reverse' : ''}`}>
-                  <div className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-blue-100 to-pink-100">
+                  <div className="w-9 h-9 md:w-10 md:h-10 rounded-sm flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-blue-100 to-pink-100">
                     <p className="text-gray-600 text-sm font-medium">
                       {message.username.split('')[0]}
                     </p>
@@ -688,7 +688,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                       <span className="text-[10px] md:text-xs text-gray-400">{new Date(message.created_at).toLocaleString()}</span>
                     </div>
 
-                    <div className={`${message.is_own_message ? 'bg-gradient-to-r from-blue-100 to-blue-50' : 'bg-white/80'} backdrop-blur-sm rounded-3xl p-3 md:p-4 shadow-sm border border-gray-100`}>
+                    <div className={`${message.is_own_message ? 'bg-pink-200' : 'bg-white/50'} backdrop-blur-sm rounded-full p-3 md:p-4 shadow-inner shadow-black/20 border-[1px] border-black/20 backdrop-blur-sm`}>
                       <p className="text-gray-800 leading-relaxed break-words">{message.content}</p>
                     </div>
                   </div>
@@ -715,7 +715,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={handleKeyPress}
                   placeholder={initialPostReference ? "Share what this moment means to you..." : "Share what's on your heart..."}
-                  className="text-black/80 w-full px-3 md:px-4 py-3 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-opacity-50 resize-none"
+                  className="text-black/80 w-full px-3 md:px-4 py-3 bg-white/80 backdrop-blur-sm rounded-sm border border-gray-200 focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-opacity-50 resize-none"
                   rows={1}
                   maxLength={280}
                 />
@@ -728,7 +728,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                 whileTap={{ scale: 0.95 }}
                 onClick={handleSendMessage}
                 disabled={!newMessage.trim()}
-                className="px-4 md:px-6 py-3 bg-gradient-to-r from-pink-200 to-blue-200 text-gray-800 rounded-2xl font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md transition-shadow"
+                className="px-4 md:px-6 py-3 bg-gradient-to-r from-pink-200 to-blue-200 text-gray-800 rounded-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md transition-shadow"
               >
                 <Send className="w-5 h-5" />
               </motion.button>
