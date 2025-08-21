@@ -125,9 +125,11 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
-
     setLoading(false);
   };
+  
+
+
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !user) return;
@@ -688,7 +690,7 @@ const WhisperPage: React.FC<WhisperPageProps> = ({
                       <span className="text-[10px] md:text-xs text-gray-400">{new Date(message.created_at).toLocaleString()}</span>
                     </div>
 
-                    <div className={`${message.is_own_message ? 'bg-pink-200' : 'bg-white/50'} backdrop-blur-sm rounded-full p-3 md:p-4 shadow-inner shadow-black/20 border-[1px] border-black/20 backdrop-blur-sm`}>
+                    <div className={`${message.is_own_message ? 'bg-pink-200' : 'bg-white/50'} backdrop-blur-sm rounded-sm p-3 md:p-4 shadow-inner shadow-black/20 border-[1px] border-black/20 backdrop-blur-sm`}>
                       <p className="text-gray-800 leading-relaxed break-words">{message.content}</p>
                     </div>
                   </div>

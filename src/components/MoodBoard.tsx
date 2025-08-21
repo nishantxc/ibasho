@@ -132,26 +132,26 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
     if (hasExistingChat) {
       return {
         text: "Connected",
-        icon: <Heart size={12} className="text-emerald-400" />,
+        icon: <Heart size={12} className="text-emerald-600" />,
         disabled: true,
-        className: "inline-flex items-center gap-2 rounded-full border border-emerald-200/50 bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-2 text-xs font-medium text-emerald-700 cursor-default shadow-sm backdrop-blur-sm"
+        className: "inline-flex items-center gap-2 px-3 py-1 text-xs font-mono text-emerald-700 bg-white border border-emerald-500 hover:bg-emerald-500 hover:text-white cursor-default rounded-sm"
       };
     }
 
     if (hasKnockedDoor) {
       return {
         text: "Whispered",
-        icon: <Star size={12} className="text-amber-400" />,
+        icon: <Star size={12} className="text-amber-600" />,
         disabled: true,
-        className: "inline-flex items-center gap-2 rounded-full border border-amber-200/50 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-2 text-xs font-medium text-amber-700 cursor-default shadow-sm backdrop-blur-sm"
+        className: "inline-flex items-center gap-2 px-3 py-1 text-xs font-mono text-amber-700 bg-white border border-amber-500 cursor-default rounded-sm"
       };
     }
 
     return {
-      text: "Send whisper",
-      icon: <MessageCircle size={12} className="text-purple-400" />,
+      text: "send whisper",
+      icon: <MessageCircle size={12} className="text-purple-600" />,
       disabled: false,
-      className: "inline-flex items-center gap-2 rounded-full border border-purple-200/50 bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-2 text-xs font-medium text-purple-700 hover:from-purple-100 hover:to-pink-100 transition-all duration-300 cursor-pointer shadow-sm backdrop-blur-sm hover:shadow-md"
+      className: "inline-flex items-center gap-2 px-3 py-1 text-xs font-mono text-purple-700 bg-white border border-purple-500 hover:bg-purple-500 hover:text-white transition-all duration-300 cursor-pointer rounded-sm"
     };
   };
 
@@ -186,7 +186,7 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
         <div className="absolute bottom-20 left-1/4 w-40 h-40 bg-gradient-to-r from-rose-200/20 to-orange-200/20 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="text-center mb-12 relative z-10">
+      <div className="text-center mb-12 relative z-10 flex flex-col items-center gap-1">
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -209,7 +209,7 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
           disabled={isLoading}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="px-6 py-3 text-sm bg-gradient-to-r from-purple-100 via-pink-100 to-rose-100 text-purple-800 rounded-full border border-purple-200/50 hover:from-purple-200 hover:via-pink-200 hover:to-rose-200 disabled:opacity-50 transition-all duration-300 shadow-lg backdrop-blur-sm font-medium"
+          className="w-fit p-2 text-sm bg-black font-medium rounded-sm"
         >
           {isLoading ? (
             <span className="flex items-center gap-2">
@@ -224,7 +224,7 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
         </motion.button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 relative z-10">
         {postsToShow.length === 0 ? (
           <div className="col-span-full text-center py-16">
             <motion.div
@@ -249,169 +249,184 @@ const MoodBoard: React.FC<MoodBoardProps> = ({ onSendMessage }) => {
                 initial={{ opacity: 0, y: 30, rotateX: 15 }}
                 animate={{ opacity: 1, y: 0, rotateX: 0 }}
                 transition={{ delay: index * 0.1, type: "spring", stiffness: 100 }}
-                // whileHover={{ y: -8, rotateX: 5 }}
                 className="group relative"
               >
-                {/* Outer ornate border frame */}
-                <div style={{
-                  background: 'linear-gradient(to bottom, #fefefe, #f8f6f1)',
-                  filter: 'sepia(5%) saturate(105%)'
-                }} className="relative bg-white rounded-lg p-4 shadow-lg">
+                {/* Postcard Container */}
+                <div
+                  className="p-4 bg-gradient-to-br from-amber-50 via-white to-amber-50 shadow-2xl w-full rounded-sm overflow-hidden border border-black/30"
+                  style={{
+                    // background: 'linear-gradient(to bottom, #fefefe, #f8f6f1)',
+                    filter: 'sepia(5%) saturate(105%)'
+                  }}
+                >
+                  {/* Postcard Header */}
+                  {/* <div className="flex justify-between items-start px-4 py-2"> */}
+                    {/* <div className="flex flex-col min-w-0">
+                      <h1 className="text-lg sm:text-xl font-serif text-gray-800 tracking-wider"
+                        style={{ fontFamily: 'Georgia, serif' }}>
+                        COMMUNITY POST
+                      </h1>
+                      <p className="text-xs text-gray-600 mt-1 font-mono">
+                        FROM {post.username?.toUpperCase()}'S JOURNEY
+                      </p>
+                    </div> */}
 
-                  {/* Corner decorative elements */}
-                  <div className="absolute top-2 left-2 w-6 h-6 border-l-2 border-t-2 border-amber-400/60 rounded-tl-lg"></div>
-                  <div className="absolute top-2 right-2 w-6 h-6 border-r-2 border-t-2 border-amber-400/60 rounded-tr-lg"></div>
-                  <div className="absolute bottom-2 left-2 w-6 h-6 border-l-2 border-b-2 border-amber-400/60 rounded-bl-lg"></div>
-                  <div className="absolute bottom-2 right-2 w-6 h-6 border-r-2 border-b-2 border-amber-400/60 rounded-br-lg"></div>
-
-                  {/* Top ornate label */}
-                  {/* <div className="relative mb-4">
-                    <div className="bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-200 rounded-2xl px-6 py-2 text-center border-2 border-amber-300/50 shadow-inner">
-                      <div className="flex items-center justify-center gap-2">
-                        <Star className="w-4 h-4 text-amber-600" />
-                        <h3 className="font-serif text-sm text-amber-800 tracking-wider uppercase">{post.username}</h3>
-                        <Star className="w-4 h-4 text-amber-600" />
-                      </div>
-                      <div className="w-16 h-0.5 bg-amber-400 mx-auto mt-1 rounded-full"></div>
-                    </div>
-                  </div> */}
-
-                  {/* Main content area with inset border */}
-                  {/* <div className="bg-gradient-to-br from-cream-50 via-white to-amber-50/30 rounded-2xl border-2 border-amber-300/30 shadow-inner p-1"> */}
-
-                  {/* Dark magical window frame */}
-                  {/* <div className="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800 rounded-xl relative overflow-hidden"> */}
-
-                  {/* Magical stars scattered in background */}
-                  <div className="absolute inset-0 opacity-60">
-                    <div className="absolute top-4 left-8 text-yellow-300">
-                      <Star className="w-3 h-3" />
-                    </div>
-                    <div className="absolute top-12 right-12 text-yellow-200">
-                      <Sparkles className="w-2 h-2" />
-                    </div>
-                    <div className="absolute bottom-20 left-6 text-yellow-400">
-                      <Star className="w-2 h-2" />
-                    </div>
-                    <div className="absolute bottom-8 right-8 text-yellow-300">
-                      <Sparkles className="w-3 h-3" />
-                    </div>
-                    <div className="absolute top-1/3 right-6 text-yellow-200">
-                      <Star className="w-2 h-2" />
-                    </div>
-                    <div className="absolute top-2/3 left-12 text-yellow-400">
-                      <Sparkles className="w-2 h-2" />
-                    </div>
-                  </div>
-
-                  {/* Username tag in top left */}
-                  {/* <div className="absolute top-4 left-4 z-20">
-                        <div className="bg-gradient-to-r from-amber-600 to-yellow-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg border border-amber-500">
-                          {post.username}
+                    {/* Postmark */}
+                    {/* <div className="hidden md:flex justify-end mb-4">
+                      <div className="w-16 h-16 rounded-full border-2 border-gray-400 flex items-center justify-center text-xs text-gray-600 font-mono bg-white/80">
+                        <div className="text-center">
+                          <div>{moment(post.created_at).format('MMM D')}</div>
+                          <div className="text-[10px]">POSTMARK</div>
                         </div>
-                      </div> */}
+                      </div>
+                    </div> */}
 
-                  {/* Visibility indicator for own posts */}
-                  {post.username == user.username && (
-                    <div className="absolute top-4 right-4 z-20">
-                      <div className="flex items-center gap-1 bg-slate-600/80 text-white px-2 py-1 rounded-full text-xs backdrop-blur-sm">
+                    {/* Visibility indicator */}
+                    {/* {post.username === user.username && (
+                      <div className="flex items-center gap-1 bg-gray-100 text-gray-600 px-2 py-1 rounded-sm text-xs font-mono">
                         <Eye size={10} />
                         {post.visibility}
                       </div>
-                    </div>
-                  )}
-
-                  {/* Main image */}
-                  <div className="relative w-full h-80">
-                    <div className="relative w-full h-full rounded-lg overflow-hidden border-2 border-amber-400/30 shadow-inner">
-                      <Image
-                        src={post.photo}
-                        alt="Enchanted moment"
-                        fill
-                        className="object-cover transition-transform duration-500"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        priority={false}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
-                    </div>
-                  </div>
+                    )} */}
                   {/* </div> */}
 
-                  {/* Caption area with parchment feel */}
-                  <div className="bg-gradient-to-br from-cream-100 via-amber-50 to-cream-100 rounded-xl mt-2 p-5 border border-amber-200/50 shadow-inner">
-                    <p className="text-slate-700 text-base leading-relaxed font-serif text-center italic">
-                      "{post.caption}"
-                    </p>
+                  <div className="flex flex-col md:flex-row">
 
-                    {/* Divider line */}
-                    <div className="flex items-center gap-3 my-4">
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-300 to-transparent"></div>
-                      <Sparkles className="w-4 h-4 text-amber-500" />
-                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-300 to-transparent"></div>
+                    {/* Left side - Photo */}
+                    <div className="w-full md:w-1/2 p-4 pt-0">
+                    <div className="flex flex-col min-w-0 py-2">
+                      <h1 className="text-lg sm:text-xl font-serif text-gray-800 tracking-wider"
+                        style={{ fontFamily: 'Georgia, serif' }}>
+                        COMMUNITY POST
+                      </h1>
+                      <p className="text-xs text-gray-600 mt-1 font-mono">
+                        FROM {post.username?.toUpperCase()}'S JOURNEY
+                      </p>
                     </div>
+                      <div className="relative overflow-hidden rounded-sm shadow-lg">
+                        <Image
+                          src={post.photo}
+                          alt="Community post"
+                          width={400}
+                          height={300}
+                          className="w-full h-64 md:h-80 object-cover"
+                          style={{ filter: 'contrast(1.1) brightness(1.05)' }}
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          priority={false}
+                        />
+                        {/* Subtle vintage overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/10"></div>
+                      </div>
+                    </div>
+                      <div className='w-full h-[1px] md:h-100 md:w-[1px] bg-black/30 rounded-full mx-2'/>
 
-                    {/* Profile section */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="relative">
-                        <div className="h-10 w-10 overflow-hidden rounded-full bg-gradient-to-br from-amber-200 to-yellow-200 shadow-md ring-2 ring-amber-300/50">
-                          {post.avatar ? (
-                            <Image src={post?.avatar} alt={post.username} fill className="object-cover" sizes="40px" />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center text-sm text-amber-700 font-bold">
-                              {post.username?.slice(0, 1)?.toUpperCase()}
+                    {/* Right side - Postcard elements */}
+                    <div className="w-full md:w-1/2 p-4 pt-0 flex flex-col">
+
+                      {/* Address lines */}
+                      <div className="space-y-3 mb-4">
+                        <div className='w-full flex items-end justify-end'>
+                        <Image className='hidden md:flex bg-white' src="/stamp.png" alt='stamp' width={100} height={24}/>
+                        </div>
+                        <div className="flex items-center">
+                          <span className="text-xs font-mono text-gray-700 w-12">To:</span>
+                          <span className="text-xs font-mono text-gray-800 ml-2 ">Everyone</span>
+                          <div className="flex-1 border-b border-gray-300 h-4 ml-2 text-black"></div>
+                        </div>
+                        <div className="flex items-center">
+                          <span className="text-xs font-mono text-gray-700 w-12">From:</span>
+                          <span className="text-xs font-mono text-gray-800 ml-2">{post.username}</span>
+                          <div className="flex-1 border-b border-gray-300 h-4 ml-2 text-black"></div>
+                        </div>
+                      </div>
+
+                      {/* Message area */}
+                      <div className="relative flex-1">
+                        <div className="border border-gray-300 rounded-sm p-4 bg-white/50 min-h-32">
+                          <div className="space-y-2">
+                            {post.mood && (
+                              <p className="text-xs font-mono text-gray-600">
+                                Mood: <span className="font-semibold text-gray-800">{post.mood}</span>
+                              </p>
+                            )}
+                            {post.mood && <div className="border-b border-gray-200"></div>}
+                            <p className="text-sm font-serif text-gray-800 italic py-2">
+                              "{post.caption}"
+                            </p>
+                          </div>
+                        </div>
+                        {/* Postmark */}
+                        <div className="absolute md:bottom-2 bottom-0 right-2 flex justify-end mb-4 transform rotate-20">
+                          <div className="w-16 h-16 rounded-full border-2 border-gray-400 flex items-center justify-center text-xs text-gray-600 font-mono bg-white/80">
+                            <div className="text-center">
+                              <div>{moment(post.created_at).format('MMM D')}</div>
+                              <div className="text-[10px]">POSTMARK</div>
                             </div>
-                          )}
+                          </div>
                         </div>
                       </div>
-                      <div className="flex-1">
-                        <div className="text-xs text-slate-600 font-serif">
-                          Shared by <span className="font-medium text-slate-800">{post.username == user.username ? 'you' : post.username}</span>
-                        </div>
-                        <div className="text-xs text-slate-500 font-serif italic">
-                          {moment(post.created_at).format('MMMM Do, YYYY')} • {moment(post.created_at).fromNow()}
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Action buttons */}
-                    <div className="flex flex-wrap items-center justify-between">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="px-3 py-1.5 rounded-full text-xs font-serif text-blue-700 bg-gradient-to-r from-blue-100/80 to-cyan-100/80 hover:from-blue-200/80 hover:to-cyan-200/80 transition-all duration-300 border border-blue-200/50 shadow-sm"
-                        >
-                          💙 cherished
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="px-3 py-1.5 rounded-full text-xs font-serif text-purple-700 bg-gradient-to-r from-purple-100/80 to-pink-100/80 hover:from-purple-200/80 hover:to-pink-200/80 transition-all duration-300 border border-purple-200/50 shadow-sm"
-                        >
-                          ✨ blessed
-                        </motion.button>
-                        {post.mood && (
-                          <span className="px-2.5 py-1 rounded-full text-xs font-serif text-rose-700 bg-gradient-to-r from-rose-100/80 to-orange-100/80 border border-rose-200/50 shadow-sm">
-                            🌸 {post.mood}
-                          </span>
+                      {/* Profile section with timestamp */}
+                      <div className="flex items-center gap-3 mt-4 mb-2">
+                        <div className="relative">
+                          <div className="h-8 w-8 overflow-hidden rounded-full bg-gradient-to-br from-gray-200 to-gray-300 shadow-md ring-2 ring-gray-300/50">
+                            {post.avatar ? (
+                              <Image src={post.avatar} alt={post.username} fill className="object-cover" sizes="32px" />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center text-xs text-gray-700 font-bold">
+                                {post.username?.slice(0, 1)?.toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-xs text-gray-500 font-mono">
+                            {moment(post.created_at).fromNow()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex flex-wrap items-center justify-between border-t border-gray-200 pt-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-2 py-1 text-xs font-mono text-blue-700 bg-white border border-blue-500 hover:bg-blue-500 hover:text-white transition-all duration-300 rounded-sm"
+                          >
+                            💙 cherish
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-2 py-1 text-xs font-mono text-purple-700 bg-white border border-purple-500 hover:bg-purple-500 hover:text-white transition-all duration-300 rounded-sm"
+                          >
+                            ✨ bless
+                          </motion.button>
+                        </div>
+
+                        {post.username !== user.username && (
+                          <motion.button
+                            className={buttonState.className}
+                            whileHover={!buttonState.disabled ? { scale: 1.05, y: -1 } : {}}
+                            whileTap={!buttonState.disabled ? { scale: 0.95 } : {}}
+                            onClick={() => !buttonState.disabled && handleSendMessage(post)}
+                            disabled={buttonState.disabled}
+                          >
+                            {buttonState.icon}
+                            {buttonState.text}
+                          </motion.button>
                         )}
                       </div>
 
-                      {post.username !== user.username && (
-                        <motion.button
-                          className={buttonState.className + " font-serif"}
-                          whileHover={!buttonState.disabled ? { scale: 1.05, y: -1 } : {}}
-                          whileTap={!buttonState.disabled ? { scale: 0.95 } : {}}
-                          onClick={() => !buttonState.disabled && handleSendMessage(post)}
-                          disabled={buttonState.disabled}
-                        >
-                          {buttonState.icon}
-                          {buttonState.text}
-                        </motion.button>
-                      )}
+                      {/* Bottom signature */}
+                      <div className="mt-2 text-right">
+                        <p className="text-[10px] text-gray-500 font-mono">
+                          Shared with love ✨
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  {/* </div> */}
                 </div>
               </motion.div>
             );
